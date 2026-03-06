@@ -148,7 +148,6 @@ const App = () => {
 
   // 加载动态 favicon
   useFavicon();
-  useFavicon();
 
   const isAdminPage = ['/admin', '/finance', '/settings', '/wallet', '/faq-manage', '/admin-tickets', '/payment-system', '/swap-system', '/energy-system', '/user-manage', '/telegram-manage', '/seo-manage', '/admin/blog'].includes(location.pathname);
   const isUserCenterPage = ['/user-center', '/my-orders', '/my-tickets'].includes(location.pathname);
