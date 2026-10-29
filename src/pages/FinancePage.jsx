@@ -1,8 +1,39 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { DollarSign, TrendingUp, TrendingDown, Calendar, Download, Search, ChevronLeft, ChevronRight, RefreshCw, CheckCircle } from 'lucide-react';
+import { DollarSign, TrendingUp, Calendar, Download, Search, ChevronLeft, ChevronRight, RefreshCw, CheckCircle, X, Eye } from 'lucide-react';
 import axios from '../api/client';
 import AdminLayout from '../components/AdminLayout';
+
+const PAYMENT_STATUS = {
+  paid: '已支付',
+  pending: '待支付',
+  failed: '失败',
+  expired: '已过期'
+};
+
+const TRANSFER_STATUS = {
+  completed: '已完成',
+  processing: '处理中',
+  pending: '待转账',
+  failed: '失败'
+};
+
+const ORDER_STATUS = {
+  pending: '待支付',
+  paid: '已支付',
+  completed: '已完成',
+  failed: '失败'
+};
+
+const statusClass = (value) => {
+  if (value === 'paid' || value === 'completed') return 'bg-green-50 text-green-600';
+  if (value === 'processing') return 'bg-blue-50 text-blue-600';
+  if (value === 'pending') return 'bg-yellow-50 text-yellow-600';
+  if (value === 'failed' || value === 'expired') return 'bg-red-50 text-red-600';
+  return 'bg-slate-50 text-slate-600';
+};
+
+const formatTime = (value) => (value ? new Date(value).toLocaleString('zh-CN') : '-');
 
 const FinancePage = () => {
   const { user } = useAuth();
@@ -25,6 +56,7 @@ const FinancePage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
   const [retryingPayment, setRetryingPayment] = useState(null);
+  const [selectedPayment, setSelectedPayment] = useState(null);
 
   useEffect(() => {
     fetchPayments();
@@ -54,7 +86,7 @@ const FinancePage = () => {
 
   const handleRetryTransfer = async (paymentId) => {
     if (!confirm('确定要手动补单吗？\n\n系统会重新执行代付操作，请确保：\n1. 用户已成功支付\n2. 代付地址正确\n3. 钱包余额充足')) return;
-    
+
     setRetryingPayment(paymentId);
     try {
       await axios.post(`/api/payments/retry/${paymentId}`);
@@ -72,20 +104,18 @@ const FinancePage = () => {
   const filteredPayments = payments.filter(payment => {
     if (filter.status !== 'all' && payment.status !== filter.status) return false;
     if (filter.payType !== 'all' && payment.payType !== filter.payType) return false;
-    if (filter.search && !payment.address.toLowerCase().includes(filter.search.toLowerCase()) 
+    if (filter.search && !payment.address.toLowerCase().includes(filter.search.toLowerCase())
         && !payment.platformOrderId?.toLowerCase().includes(filter.search.toLowerCase())) return false;
     if (filter.startDate && new Date(payment.createdAt) < new Date(filter.startDate)) return false;
     if (filter.endDate && new Date(payment.createdAt) > new Date(filter.endDate)) return false;
     return true;
   });
 
-  // 分页逻辑
   const totalPages = Math.ceil(filteredPayments.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentPayments = filteredPayments.slice(startIndex, endIndex);
 
-  // 当筛选条件改变时重置到第一页
   useEffect(() => {
     setCurrentPage(1);
   }, [filter]);
@@ -120,56 +150,49 @@ const FinancePage = () => {
 
   return (
     <AdminLayout>
-      {/* 统计卡片 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-        <div className="bg-white rounded-lg border border-slate-200 p-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center">
-              <DollarSign className="text-blue-600" size={24} />
-            </div>
-            <span className="text-xs font-bold text-green-600 flex items-center gap-1">
-              <TrendingUp size={14} />
-              +12.5%
-            </span>
+      {/* 统计：单行紧凑，去掉假涨幅和重复标题 */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-4">
+        <div className="bg-white rounded-lg border border-slate-200 px-3 py-2 flex items-center gap-3">
+          <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center shrink-0">
+            <DollarSign className="text-blue-600" size={16} />
           </div>
-          <p className="text-sm text-slate-500 font-medium mb-1">总收入</p>
-          <p className="text-xl font-bold text-slate-900">¥ {stats.totalRevenue.toLocaleString()}</p>
+          <div className="min-w-0">
+            <p className="text-xs text-slate-500">总收入</p>
+            <p className="text-base font-bold text-slate-900 leading-tight">¥ {stats.totalRevenue.toLocaleString()}</p>
+          </div>
         </div>
 
-        <div className="bg-white rounded-lg border border-slate-200 p-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center">
-              <TrendingUp className="text-green-600" size={24} />
-            </div>
-            <span className="text-xs font-bold text-green-600 flex items-center gap-1">
-              <TrendingUp size={14} />
-              +8.2%
-            </span>
+        <div className="bg-white rounded-lg border border-slate-200 px-3 py-2 flex items-center gap-3">
+          <div className="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center shrink-0">
+            <TrendingUp className="text-green-600" size={16} />
           </div>
-          <p className="text-sm text-slate-500 font-medium mb-1">今日收入</p>
-          <p className="text-xl font-bold text-slate-900">¥ {stats.todayRevenue.toLocaleString()}</p>
+          <div className="min-w-0">
+            <p className="text-xs text-slate-500">今日收入</p>
+            <p className="text-base font-bold text-slate-900 leading-tight">¥ {stats.todayRevenue.toLocaleString()}</p>
+          </div>
         </div>
 
-        <div className="bg-white rounded-lg border border-slate-200 p-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center">
-              <Calendar className="text-purple-600" size={24} />
-            </div>
-            <span className="text-xs font-bold text-slate-400">总订单</span>
+        <div className="bg-white rounded-lg border border-slate-200 px-3 py-2 flex items-center gap-3">
+          <div className="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center shrink-0">
+            <Calendar className="text-purple-600" size={16} />
           </div>
-          <p className="text-sm text-slate-500 font-medium mb-1">订单总数</p>
-          <p className="text-xl font-bold text-slate-900">{stats.totalOrders.toLocaleString()}</p>
+          <div className="min-w-0">
+            <p className="text-xs text-slate-500">总订单</p>
+            <p className="text-base font-bold text-slate-900 leading-tight">
+              {stats.totalOrders.toLocaleString()}
+              <span className="ml-1.5 text-xs font-medium text-slate-400">成功率 {stats.successRate}%</span>
+            </p>
+          </div>
         </div>
 
-        <div className="bg-white rounded-lg border border-slate-200 p-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-orange-50 rounded-xl flex items-center justify-center">
-              <Calendar className="text-orange-600" size={24} />
-            </div>
-            <span className="text-xs font-bold text-green-600">{stats.successRate}%</span>
+        <div className="bg-white rounded-lg border border-slate-200 px-3 py-2 flex items-center gap-3">
+          <div className="w-8 h-8 bg-orange-50 rounded-lg flex items-center justify-center shrink-0">
+            <Calendar className="text-orange-600" size={16} />
           </div>
-          <p className="text-sm text-slate-500 font-medium mb-1">今日订单</p>
-          <p className="text-xl font-bold text-slate-900">{stats.todayOrders} 单</p>
+          <div className="min-w-0">
+            <p className="text-xs text-slate-500">今日订单</p>
+            <p className="text-base font-bold text-slate-900 leading-tight">{stats.todayOrders}</p>
+          </div>
         </div>
       </div>
 
@@ -266,7 +289,7 @@ const FinancePage = () => {
               <col style={{ width: '100px' }} />
               <col style={{ width: '180px' }} />
               <col style={{ width: '180px' }} />
-              <col style={{ width: '120px' }} />
+              <col style={{ width: '160px' }} />
             </colgroup>
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr className="text-xs font-bold text-slate-600">
@@ -300,13 +323,23 @@ const FinancePage = () => {
               ) : (
                 currentPayments.map((payment) => (
                   <tr key={payment._id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-4 py-3 text-sm font-mono text-slate-900 whitespace-nowrap">
-                      {payment.platformOrderId || '-'}
+                    <td className="px-4 py-3 text-sm font-mono whitespace-nowrap">
+                      {payment.platformOrderId ? (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedPayment(payment)}
+                          className="text-[#0095ff] hover:text-[#007ad6] hover:underline"
+                        >
+                          {payment.platformOrderId}
+                        </button>
+                      ) : (
+                        <span className="text-slate-400">-</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <span className={`text-xs font-bold px-2 py-1 rounded ${
-                        payment.payType === 'USDT' 
-                          ? 'bg-green-50 text-green-600' 
+                        payment.payType === 'USDT'
+                          ? 'bg-green-50 text-green-600'
                           : 'bg-red-50 text-red-600'
                       }`}>
                         {payment.payType}
@@ -328,34 +361,17 @@ const FinancePage = () => {
                       {payment.paymentMethod === 'alipay' ? '支付宝' : '微信'}
                     </td>
                     <td className="px-4 py-3 text-center whitespace-nowrap">
-                      <span className={`text-xs font-bold px-2 py-1 rounded ${
-                        payment.paymentStatus === 'paid' ? 'bg-green-50 text-green-600' :
-                        payment.paymentStatus === 'pending' ? 'bg-yellow-50 text-yellow-600' :
-                        payment.paymentStatus === 'failed' ? 'bg-red-50 text-red-600' :
-                        'bg-slate-50 text-slate-600'
-                      }`}>
-                        {payment.paymentStatus === 'paid' ? '已支付' :
-                         payment.paymentStatus === 'pending' ? '待支付' :
-                         payment.paymentStatus === 'failed' ? '失败' :
-                         payment.paymentStatus === 'expired' ? '已过期' : '未知'}
+                      <span className={`text-xs font-bold px-2 py-1 rounded ${statusClass(payment.paymentStatus)}`}>
+                        {PAYMENT_STATUS[payment.paymentStatus] || '未知'}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center whitespace-nowrap">
-                      <span className={`text-xs font-bold px-2 py-1 rounded ${
-                        payment.transferStatus === 'completed' ? 'bg-green-50 text-green-600' :
-                        payment.transferStatus === 'processing' ? 'bg-blue-50 text-blue-600' :
-                        payment.transferStatus === 'pending' ? 'bg-yellow-50 text-yellow-600' :
-                        payment.transferStatus === 'failed' ? 'bg-red-50 text-red-600' :
-                        'bg-slate-50 text-slate-600'
-                      }`}>
-                        {payment.transferStatus === 'completed' ? '已完成' :
-                         payment.transferStatus === 'processing' ? '处理中' :
-                         payment.transferStatus === 'pending' ? '待转账' :
-                         payment.transferStatus === 'failed' ? '失败' : '未知'}
+                      <span className={`text-xs font-bold px-2 py-1 rounded ${statusClass(payment.transferStatus)}`}>
+                        {TRANSFER_STATUS[payment.transferStatus] || '未知'}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">
-                      {new Date(payment.createdAt).toLocaleString('zh-CN')}
+                      {formatTime(payment.createdAt)}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       {payment.txHash ? (
@@ -372,33 +388,40 @@ const FinancePage = () => {
                       )}
                     </td>
                     <td className="px-4 py-3 text-center whitespace-nowrap">
-                      {(payment.transferStatus === 'failed' || payment.transferStatus === 'pending') && payment.paymentStatus === 'paid' ? (
+                      <div className="flex items-center justify-center gap-1">
                         <button
-                          onClick={() => handleRetryTransfer(payment._id)}
-                          disabled={retryingPayment === payment._id}
-                          className="px-3 py-1 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-lg flex items-center gap-1 transition-all disabled:opacity-50 disabled:cursor-not-allowed mx-auto"
-                          title="手动补单 - 重新执行代付"
+                          onClick={() => setSelectedPayment(payment)}
+                          className="px-2 py-1 text-xs font-bold text-[#0095ff] hover:bg-blue-50 rounded-lg flex items-center gap-1"
                         >
-                          {retryingPayment === payment._id ? (
-                            <>
-                              <RefreshCw size={12} className="animate-spin" />
-                              补单中
-                            </>
-                          ) : (
-                            <>
-                              <RefreshCw size={12} />
-                              补单
-                            </>
-                          )}
+                          <Eye size={12} />
+                          详情
                         </button>
-                      ) : payment.transferStatus === 'completed' ? (
-                        <div className="flex items-center justify-center gap-1 text-green-600">
-                          <CheckCircle size={14} />
-                          <span className="text-xs font-bold">完成</span>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-slate-400">-</span>
-                      )}
+                        {(payment.transferStatus === 'failed' || payment.transferStatus === 'pending') && payment.paymentStatus === 'paid' ? (
+                          <button
+                            onClick={() => handleRetryTransfer(payment._id)}
+                            disabled={retryingPayment === payment._id}
+                            className="px-2 py-1 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-lg flex items-center gap-1 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="手动补单 - 重新执行代付"
+                          >
+                            {retryingPayment === payment._id ? (
+                              <>
+                                <RefreshCw size={12} className="animate-spin" />
+                                补单中
+                              </>
+                            ) : (
+                              <>
+                                <RefreshCw size={12} />
+                                补单
+                              </>
+                            )}
+                          </button>
+                        ) : payment.transferStatus === 'completed' ? (
+                          <span className="flex items-center gap-1 text-green-600">
+                            <CheckCircle size={14} />
+                            <span className="text-xs font-bold">完成</span>
+                          </span>
+                        ) : null}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -414,7 +437,7 @@ const FinancePage = () => {
           <p className="text-sm text-slate-500 font-medium">
             显示第 {startIndex + 1} - {Math.min(endIndex, filteredPayments.length)} 条，共 {filteredPayments.length} 条记录
           </p>
-          
+
           <div className="flex items-center gap-2">
             <button
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
@@ -424,10 +447,9 @@ const FinancePage = () => {
               <ChevronLeft size={16} />
               上一页
             </button>
-            
+
             <div className="flex items-center gap-1">
               {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
-                // 只显示当前页附近的页码
                 if (
                   page === 1 ||
                   page === totalPages ||
@@ -455,7 +477,7 @@ const FinancePage = () => {
                 return null;
               })}
             </div>
-            
+
             <button
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
@@ -464,6 +486,120 @@ const FinancePage = () => {
               下一页
               <ChevronRight size={16} />
             </button>
+          </div>
+        </div>
+      )}
+
+      {selectedPayment && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => setSelectedPayment(null)}
+        >
+          <div
+            className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 sticky top-0 bg-white">
+              <h2 className="text-base font-bold text-slate-800">订单详情</h2>
+              <button
+                onClick={() => setSelectedPayment(null)}
+                className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+              <div className="sm:col-span-2">
+                <p className="text-xs text-slate-500 mb-0.5">订单号</p>
+                <p className="font-mono text-slate-900 break-all">{selectedPayment.platformOrderId || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 mb-0.5">类型</p>
+                <p className="font-bold text-slate-900">{selectedPayment.payType}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 mb-0.5">数量</p>
+                <p className="font-bold text-slate-900">{selectedPayment.amount}</p>
+              </div>
+              <div className="sm:col-span-2">
+                <p className="text-xs text-slate-500 mb-0.5">代付地址</p>
+                <p className="font-mono text-slate-900 break-all">{selectedPayment.address}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 mb-0.5">邮箱</p>
+                <p className="text-slate-900 break-all">{selectedPayment.email || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 mb-0.5">Telegram ID</p>
+                <p className="text-slate-900">{selectedPayment.telegramId || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 mb-0.5">支付方式</p>
+                <p className="text-slate-900">{selectedPayment.paymentMethod === 'alipay' ? '支付宝' : '微信'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 mb-0.5">订单状态</p>
+                <span className={`text-xs font-bold px-2 py-1 rounded ${statusClass(selectedPayment.status)}`}>
+                  {ORDER_STATUS[selectedPayment.status] || '未知'}
+                </span>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 mb-0.5">总额</p>
+                <p className="font-bold text-slate-900">¥ {selectedPayment.totalCNY}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 mb-0.5">服务费</p>
+                <p className="font-bold text-orange-600">¥ {selectedPayment.serviceFee || 0}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 mb-0.5">支付状态</p>
+                <span className={`text-xs font-bold px-2 py-1 rounded ${statusClass(selectedPayment.paymentStatus)}`}>
+                  {PAYMENT_STATUS[selectedPayment.paymentStatus] || '未知'}
+                </span>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 mb-0.5">支付时间</p>
+                <p className="text-slate-900">{formatTime(selectedPayment.paymentTime)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 mb-0.5">转账状态</p>
+                <span className={`text-xs font-bold px-2 py-1 rounded ${statusClass(selectedPayment.transferStatus)}`}>
+                  {TRANSFER_STATUS[selectedPayment.transferStatus] || '未知'}
+                </span>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 mb-0.5">转账时间</p>
+                <p className="text-slate-900">{formatTime(selectedPayment.transferTime)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 mb-0.5">出款钱包</p>
+                <p className="text-slate-900">{selectedPayment.walletName || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 mb-0.5">邮件通知</p>
+                <p className="text-slate-900">{selectedPayment.emailSent ? '已发送' : '未发送'}</p>
+              </div>
+              <div className="sm:col-span-2">
+                <p className="text-xs text-slate-500 mb-0.5">交易哈希</p>
+                {selectedPayment.txHash ? (
+                  <a
+                    href={`https://tronscan.org/#/transaction/${selectedPayment.txHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-mono text-[#0095ff] hover:text-[#007ad6] break-all"
+                  >
+                    {selectedPayment.txHash}
+                  </a>
+                ) : (
+                  <p className="text-slate-400">-</p>
+                )}
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 mb-0.5">创建时间</p>
+                <p className="text-slate-900">{formatTime(selectedPayment.createdAt)}</p>
+              </div>
+            </div>
           </div>
         </div>
       )}
