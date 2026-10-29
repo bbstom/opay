@@ -364,6 +364,12 @@ const rentEnergyWithBalance = async ({ userId, receiveAddress, trxAmount }) => {
       orderId: order._id,
       spendUsdt
     }).catch(() => {});
+    require('./energyFeed').notifyEnergyRental({
+      energyAmount: order.energyAmount,
+      receiveAddress: address,
+      sendAddress: settings.energyRentalAddress,
+      at: new Date()
+    }).catch((err) => console.error('能量群公告失败:', err.message));
     return order;
   } catch (err) {
     try {

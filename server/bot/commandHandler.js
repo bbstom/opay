@@ -54,6 +54,8 @@ const commandHandlers = {
   }
 };
 
+commandHandlers.orders = commandHandlers.my_orders;
+
 // 注册自定义命令
 async function registerCustomCommands(bot) {
   try {
@@ -212,48 +214,48 @@ async function initializeDefaultCommands() {
       {
         command: 'pay',
         description: '代付服务',
-        action: 'callback',
-        callbackData: 'payment',
+        action: 'function',
+        functionName: 'pay_usdt',
         order: 3,
         icon: '💰'
       },
       {
         command: 'energy',
         description: '能量租赁',
-        action: 'callback',
-        callbackData: 'energy',
+        action: 'function',
+        functionName: 'energy',
         order: 4,
         icon: '⚡'
       },
       {
         command: 'swap',
         description: '闪兑服务',
-        action: 'callback',
-        callbackData: 'swap',
+        action: 'function',
+        functionName: 'swap',
         order: 5,
         icon: '🔄'
       },
       {
         command: 'orders',
         description: '我的订单',
-        action: 'callback',
-        callbackData: 'my_orders',
+        action: 'function',
+        functionName: 'my_orders',
         order: 6,
         icon: '📦'
       },
       {
         command: 'tickets',
         description: '我的工单',
-        action: 'callback',
-        callbackData: 'my_tickets',
+        action: 'function',
+        functionName: 'tickets',
         order: 7,
         icon: '🎫'
       },
       {
         command: 'account',
         description: '个人中心',
-        action: 'callback',
-        callbackData: 'account',
+        action: 'function',
+        functionName: 'account',
         order: 8,
         icon: '👤'
       },

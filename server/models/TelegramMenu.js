@@ -16,13 +16,17 @@ const telegramMenuSchema = new mongoose.Schema({
     row: { type: Number, default: 0 }, // 按钮所在行
     col: { type: Number, default: 0 }, // 按钮所在列
     enabled: { type: Boolean, default: true }, // 是否启用
-    order: { type: Number, default: 0 } // 排序
+    order: { type: Number, default: 0 }, // 排序
+    showInSlash: { type: Boolean, default: true }, // 同时出现在 / 菜单
+    slashCommand: { type: String, default: '' }
   }],
   
   // 系统功能映射
   systemActions: {
     payment_usdt: { type: Boolean, default: true },
     payment_trx: { type: Boolean, default: true },
+    energy_rental: { type: Boolean, default: true },
+    swap_service: { type: Boolean, default: true },
     orders_list: { type: Boolean, default: true },
     tickets_list: { type: Boolean, default: true },
     account_info: { type: Boolean, default: true },

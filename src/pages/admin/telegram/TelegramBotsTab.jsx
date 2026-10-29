@@ -69,96 +69,84 @@ export default function TelegramBotsTab() {
   };
 
   if (!ready) {
-    return <div className="py-12 text-center text-sm text-slate-500">加载中...</div>;
+    return <div className="py-8 text-center text-sm text-slate-500">加载 Bot...</div>;
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-end">
+    <div className="bg-white rounded-lg border border-slate-200 p-4 space-y-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-bold text-slate-800">Bot 凭证</h3>
+          <p className="text-xs text-slate-500 mt-1">
+            Token 存在数据库，不写 .env。已保存的不会回显，留空表示不改。
+          </p>
+        </div>
         <button
           type="button"
           onClick={handleSave}
           disabled={loading}
-          className="bg-green-500 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-green-600 transition-all disabled:opacity-50"
+          className="bg-cyan-500 text-white px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1.5 hover:bg-cyan-600 disabled:opacity-50"
         >
-          <Save size={20} /> {loading ? '保存中...' : '保存设置'}
+          <Save size={14} /> {loading ? '保存中' : '保存 Bot'}
         </button>
       </div>
 
-      <div className="bg-white rounded-lg border border-slate-200 p-4 space-y-6">
-        <h2 className="text-xl font-black text-slate-800">Bot Token</h2>
-        <div className="bg-cyan-50 border border-cyan-200 rounded-xl p-4">
-          <p className="text-sm text-cyan-800">
-            Token 保存在数据库，不再写 .env。列表第一项已启用的 Bot 用于网站登录验签和邀请链接。已保存的 Token 不会回显，留空表示不修改。
-          </p>
-        </div>
-
-        {bots.map((bot, index) => (
-          <div key={bot.id} className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <p className="font-bold text-slate-800">Bot {index + 1}{index === 0 ? '（登录 / 邀请）' : ''}</p>
-              <button
-                type="button"
-                onClick={() => setBots((prev) => prev.filter((_, i) => i !== index))}
-                className="text-slate-500 hover:text-red-600 p-1"
-                title="删除"
+      {bots.map((bot, index) => (
+        <div key={bot.id} className="border border-slate-200 rounded-xl p-3 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-bold text-slate-800">
+              {index === 0 ? '主 Bot（登录 / 邀请）' : `Bot ${index + 1}`}
+              <span className={`ml-2 text-xs font-medium ${bot.enabled !== false && bot.hasToken ? 'text-emerald-600' : 'text-slate-400'}`}>
+                {bot.enabled === false ? '已关闭' : bot.hasToken ? '已保存 Token' : '还没填 Token'}
+              </span>
+            </p>
+            <button type="button" onClick={() => setBots((prev) => prev.filter((_, i) => i !== index))} className="text-slate-400 hover:text-red-600 p-1">
+              <Trash2 size={14} />
+            </button>
+          </div>
+          <div className="grid md:grid-cols-3 gap-3">
+            <label className="text-xs text-slate-500">
+              启用
+              <select
+                className="mt-1 w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm"
+                value={bot.enabled !== false ? '1' : '0'}
+                onChange={(e) => updateBot(index, { enabled: e.target.value === '1' })}
               >
-                <Trash2 size={16} />
-              </button>
-            </div>
-
-            <div className="flex items-center justify-between bg-white border border-slate-200 rounded-xl p-4">
-              <div>
-                <p className="font-bold text-slate-800">启用</p>
-                <p className="text-xs text-slate-500">关闭后该 Bot 不会启动</p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={bot.enabled !== false}
-                  onChange={(e) => updateBot(index, { enabled: e.target.checked })}
-                  className="sr-only peer"
-                />
-                <div className="w-14 h-7 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-cyan-500" />
-              </label>
-            </div>
-
-            <div>
-              <label className="text-sm font-bold text-slate-600 block mb-2">Bot 用户名</label>
+                <option value="1">开</option>
+                <option value="0">关</option>
+              </select>
+            </label>
+            <label className="text-xs text-slate-500 md:col-span-1">
+              用户名（不含 @）
               <input
-                type="text"
                 value={bot.username}
                 onChange={(e) => updateBot(index, { username: e.target.value })}
-                className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-cyan-500 outline-none"
-                placeholder="不含 @，例如 Trxec_bot"
+                className="mt-1 w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-cyan-500"
+                placeholder="Trxec_bot"
               />
-            </div>
-
-            <div>
-              <label className="text-sm font-bold text-slate-600 block mb-2">Bot Token</label>
+            </label>
+            <label className="text-xs text-slate-500">
+              Token
               <input
                 type="password"
                 value={bot.token}
                 onChange={(e) => updateBot(index, { token: e.target.value })}
-                className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-cyan-500 outline-none"
-                placeholder={bot.hasToken ? '已保存，留空不修改' : '从 BotFather 复制的 Token'}
+                className="mt-1 w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-cyan-500"
+                placeholder={bot.hasToken ? '已保存，留空不改' : '从 BotFather 复制'}
                 autoComplete="new-password"
               />
-              {bot.hasToken && (
-                <p className="text-xs text-slate-500 mt-1">当前已保存 Token</p>
-              )}
-            </div>
+            </label>
           </div>
-        ))}
+        </div>
+      ))}
 
-        <button
-          type="button"
-          onClick={() => setBots((prev) => [...prev, emptyBot()])}
-          className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-        >
-          <Plus size={16} /> 添加 Bot
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={() => setBots((prev) => [...prev, emptyBot()])}
+        className="px-3 py-1.5 border border-slate-300 rounded-lg text-sm text-slate-700 hover:bg-slate-50 inline-flex items-center gap-1.5"
+      >
+        <Plus size={14} /> 再加一个 Bot
+      </button>
     </div>
   );
 }

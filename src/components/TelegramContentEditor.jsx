@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 // 系统默认模板
-const DEFAULT_TEMPLATES = {
+export const DEFAULT_TEMPLATES = {
   welcome_new_user: {
     name: '新用户欢迎消息',
     category: 'welcome',

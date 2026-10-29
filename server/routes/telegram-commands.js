@@ -218,6 +218,76 @@ router.post('/reorder', auth, adminAuth, async (req, res) => {
   }
 });
 
+const ACTION_SLASH = {
+  payment_usdt: { command: 'pay_usdt', description: 'USDT代付', functionName: 'pay_usdt' },
+  payment_trx: { command: 'pay_trx', description: 'TRX代付', functionName: 'pay_trx' },
+  energy_rental: { command: 'energy', description: '能量租赁', functionName: 'energy' },
+  swap_service: { command: 'swap', description: '闪兑服务', functionName: 'swap' },
+  orders_list: { command: 'orders', description: '我的订单', functionName: 'my_orders' },
+  tickets_list: { command: 'tickets', description: '我的工单', functionName: 'tickets' },
+  account_info: { command: 'account', description: '个人中心', functionName: 'account' },
+  help_center: { command: 'help', description: '帮助信息', functionName: 'help' }
+};
+
+router.post('/sync-menu', auth, adminAuth, async (req, res) => {
+  try {
+    const buttons = Array.isArray(req.body?.buttons) ? req.body.buttons : [];
+    const specs = [
+      { command: 'start', description: '启动机器人', action: 'function', functionName: 'start', enabled: true, showInMenu: true, order: 0 },
+      { command: 'menu', description: '显示主菜单', action: 'function', functionName: 'menu', enabled: true, showInMenu: true, order: 1 }
+    ];
+    let order = 2;
+    for (const btn of buttons) {
+      if (btn.enabled === false || btn.type === 'url' || btn.showInSlash === false) continue;
+      const mapped = ACTION_SLASH[btn.action];
+      if (mapped) {
+        specs.push({
+          command: mapped.command,
+          description: mapped.description,
+          action: 'function',
+          functionName: mapped.functionName,
+          enabled: true,
+          showInMenu: true,
+          order: order++
+        });
+        continue;
+      }
+      const command = String(btn.slashCommand || '').replace(/^\//, '').toLowerCase();
+      if (!/^[a-z][a-z0-9_]{0,31}$/.test(command)) continue;
+      specs.push({
+        command,
+        description: String(btn.text || command).slice(0, 32),
+        action: 'callback',
+        callbackData: btn.action,
+        enabled: true,
+        showInMenu: true,
+        order: order++
+      });
+    }
+
+    for (const spec of specs) {
+      await TelegramCommand.findOneAndUpdate({ command: spec.command }, spec, { upsert: true, new: true });
+    }
+
+    const managed = new Set(specs.map((s) => s.command));
+    const systemCmds = [...Object.values(ACTION_SLASH).map((s) => s.command), 'pay']
+      .filter((c) => !managed.has(c));
+    if (systemCmds.length) {
+      await TelegramCommand.updateMany({ command: { $in: systemCmds } }, { showInMenu: false });
+    }
+
+    try {
+      await reloadBotCommands();
+    } catch (err) {
+      return res.json({ count: specs.length, warning: err.message });
+    }
+    res.json({ count: specs.length });
+  } catch (error) {
+    console.error('同步斜杠菜单失败:', error);
+    res.status(500).json({ error: error.message || '同步斜杠菜单失败' });
+  }
+});
+
 // 切换命令启用状态
 router.post('/:id/toggle', auth, adminAuth, async (req, res) => {
   try {

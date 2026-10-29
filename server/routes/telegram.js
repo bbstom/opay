@@ -11,6 +11,17 @@ const { getBotInstance } = require('../bot/MultiBotManager');
 const router = express.Router();
 router.use(auth, adminAuth);
 
+const defaultMenuButtons = () => [
+  { text: '💰 USDT 代付', type: 'system', action: 'payment_usdt', row: 0, col: 0, order: 0, enabled: true, showInSlash: true },
+  { text: '💎 TRX 代付', type: 'system', action: 'payment_trx', row: 0, col: 1, order: 1, enabled: true, showInSlash: true },
+  { text: '⚡ 能量租赁', type: 'system', action: 'energy_rental', row: 1, col: 0, order: 2, enabled: true, showInSlash: true },
+  { text: '🔄 闪兑', type: 'system', action: 'swap_service', row: 1, col: 1, order: 3, enabled: true, showInSlash: true },
+  { text: '📋 我的订单', type: 'system', action: 'orders_list', row: 2, col: 0, order: 4, enabled: true, showInSlash: true },
+  { text: '💬 工单', type: 'system', action: 'tickets_list', row: 2, col: 1, order: 5, enabled: true, showInSlash: true },
+  { text: '👤 个人中心', type: 'system', action: 'account_info', row: 3, col: 0, order: 6, enabled: true, showInSlash: true },
+  { text: '❓ 帮助', type: 'system', action: 'help_center', row: 3, col: 1, order: 7, enabled: true, showInSlash: true }
+];
+
 // ==================== 模板管理 ====================
 
 // 获取所有模板
@@ -354,6 +365,29 @@ router.get('/groups', async (req, res) => {
   }
 });
 
+// 群开关：手动群发 / 能量动态
+router.patch('/groups/:chatId', async (req, res) => {
+  try {
+    const patch = {};
+    if (typeof req.body.allowBroadcast === 'boolean') patch.allowBroadcast = req.body.allowBroadcast;
+    if (typeof req.body.energyFeed === 'boolean') patch.energyFeed = req.body.energyFeed;
+    if (!Object.keys(patch).length) {
+      return res.status(400).json({ error: '没有可更新的字段' });
+    }
+    patch.updatedAt = new Date();
+
+    const group = await TelegramGroup.findOneAndUpdate(
+      { chatId: req.params.chatId },
+      { $set: patch },
+      { new: true }
+    );
+    if (!group) return res.status(404).json({ error: '群组不存在' });
+    res.json(group);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 // 刷新群组信息
 router.post('/groups/:chatId/refresh', async (req, res) => {
   try {
@@ -441,14 +475,7 @@ router.get('/menu', async (req, res) => {
     if (!menu) {
       menu = await TelegramMenu.create({
         name: 'main_menu',
-        buttons: [
-          { text: '💰 USDT 代付', type: 'system', action: 'payment_usdt', row: 0, col: 0, order: 0 },
-          { text: '💰 TRX 代付', type: 'system', action: 'payment_trx', row: 0, col: 1, order: 1 },
-          { text: '📋 我的订单', type: 'system', action: 'orders_list', row: 1, col: 0, order: 2 },
-          { text: '💬 工单系统', type: 'system', action: 'tickets_list', row: 1, col: 1, order: 3 },
-          { text: '👤 个人中心', type: 'system', action: 'account_info', row: 2, col: 0, order: 4 },
-          { text: '❓ 帮助中心', type: 'system', action: 'help_center', row: 2, col: 1, order: 5 }
-        ],
+        buttons: defaultMenuButtons(),
         layout: 'custom'
       });
     }
@@ -489,14 +516,7 @@ router.post('/menu/reset', async (req, res) => {
 
     const menu = await TelegramMenu.create({
       name: 'main_menu',
-      buttons: [
-        { text: '💰 USDT 代付', type: 'system', action: 'payment_usdt', row: 0, col: 0, order: 0 },
-        { text: '💰 TRX 代付', type: 'system', action: 'payment_trx', row: 0, col: 1, order: 1 },
-        { text: '📋 我的订单', type: 'system', action: 'orders_list', row: 1, col: 0, order: 2 },
-        { text: '💬 工单系统', type: 'system', action: 'tickets_list', row: 1, col: 1, order: 3 },
-        { text: '👤 个人中心', type: 'system', action: 'account_info', row: 2, col: 0, order: 4 },
-        { text: '❓ 帮助中心', type: 'system', action: 'help_center', row: 2, col: 1, order: 5 }
-      ],
+      buttons: defaultMenuButtons(),
       layout: 'custom'
     });
 

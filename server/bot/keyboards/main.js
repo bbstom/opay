@@ -51,6 +51,10 @@ function getDefaultMainKeyboard() {
       Markup.button.callback('💰 TRX 代付', 'payment_trx')
     ],
     [
+      Markup.button.callback('⚡ 能量租赁', 'energy_rental'),
+      Markup.button.callback('🔄 闪兑', 'swap_service')
+    ],
+    [
       Markup.button.callback('📋 我的订单', 'orders_list'),
       Markup.button.callback('💬 工单系统', 'tickets_list')
     ],

@@ -25,7 +25,10 @@ import {
   FileText,
   AlertTriangle,
   Shield,
-  Coins
+  Coins,
+  Bot,
+  Puzzle,
+  Smartphone
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -75,14 +78,10 @@ const AdminLayout = ({ children }) => {
       icon: <MessageSquare size={20} />,
       label: 'Telegram Bot',
       subItems: [
-        { id: 'bots', icon: <Key size={18} />, label: 'Bot Token' },
-        { id: 'commands', icon: <Zap size={18} />, label: '快捷指令' },
-        { id: 'menu', icon: <LayoutIcon size={18} />, label: '主菜单' },
-        { id: 'contents', icon: <FileText size={18} />, label: '内容管理' },
-        { id: 'templates', icon: <FileText size={18} />, label: '消息模板' },
-        { id: 'broadcasts', icon: <Share2 size={18} />, label: '群发消息' },
-        { id: 'broadcast-stats', icon: <TrendingUp size={18} />, label: '群发统计' },
-        { id: 'stats', icon: <TrendingUp size={18} />, label: '用户统计' }
+        { id: 'hub', icon: <Bot size={18} />, label: '我的机器人' },
+        { id: 'studio', icon: <Smartphone size={18} />, label: '可视化配置' },
+        { id: 'components', icon: <Puzzle size={18} />, label: '自定义组件' },
+        { id: 'broadcasts', icon: <Share2 size={18} />, label: '群发' }
       ]
     },
     { path: '/faq-manage', icon: <HelpCircle size={20} />, label: '常见问题' },

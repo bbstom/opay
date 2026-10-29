@@ -5,6 +5,28 @@ class ContentService {
   constructor() {
     this.cache = new Map();
     this.cacheTTL = 60000; // 1分钟缓存
+    this.settingsCache = null;
+    this.settingsCacheTime = 0;
+  }
+
+  async pickBaseVars(ctx) {
+    if (!this.settingsCache || Date.now() - this.settingsCacheTime > this.cacheTTL) {
+      const Settings = require('../../models/Settings');
+      this.settingsCache = await Settings.findOne().select('siteName telegramCustomerService').lean();
+      this.settingsCacheTime = Date.now();
+    }
+    const settings = this.settingsCache;
+    const from = ctx?.from || {};
+    const user = ctx?.session?.user || {};
+    return {
+      siteName: settings?.siteName || '可可代付',
+      username: user.username || from.username || '',
+      firstName: from.first_name || user.telegramFirstName || user.username || '',
+      telegramId: from.id != null ? String(from.id) : String(user.telegramId || ''),
+      email: user.email || '',
+      websiteUrl: process.env.APP_URL || '',
+      customerService: settings?.telegramCustomerService || ''
+    };
   }
 
   // 获取内容配置
@@ -25,23 +47,43 @@ class ContentService {
     return content;
   }
 
+  fillVars(text, variables = {}) {
+    let out = String(text || '');
+    Object.keys(variables).forEach((key) => {
+      const value = variables[key] == null ? '' : String(variables[key]);
+      out = out.replace(new RegExp(`{{${key}}}`, 'g'), value);
+    });
+    return out;
+  }
+
+  async mergeVars(ctx, variables = {}) {
+    let base = {};
+    try {
+      base = await this.pickBaseVars(ctx);
+    } catch (error) {
+      console.error('读取通用变量失败:', error);
+    }
+    return { ...base, ...variables };
+  }
+
+  async renderKey(ctx, key, variables = {}) {
+    const content = await this.getContent(key);
+    if (!content) return null;
+    return this.renderContent(content, await this.mergeVars(ctx, variables));
+  }
+
   // 渲染内容（替换变量）
   renderContent(content, variables = {}) {
     if (!content || !content.content) return null;
 
-    let text = content.content.text || '';
-    
-    // 替换变量
-    Object.keys(variables).forEach(key => {
-      const regex = new RegExp(`{{${key}}}`, 'g');
-      text = text.replace(regex, variables[key]);
-    });
+    const text = this.fillVars(content.content.text || '', variables);
+    const caption = this.fillVars(content.content.caption || '', variables);
 
     return {
       type: content.content.type,
       text,
       mediaUrl: content.content.mediaUrl,
-      caption: content.content.caption,
+      caption,
       parseMode: content.content.parseMode,
       features: content.features,
       buttons: this.buildButtons(content, variables)
@@ -78,11 +120,8 @@ class ContentService {
             let text = btn.text;
             let data = btn.data;
             
-            Object.keys(variables).forEach(key => {
-              const regex = new RegExp(`{{${key}}}`, 'g');
-              text = text.replace(regex, variables[key]);
-              data = data.replace(regex, variables[key]);
-            });
+            text = this.fillVars(text, variables);
+            data = this.fillVars(data, variables);
 
             if (btn.type === 'url') {
               // 验证和修复 URL 格式
@@ -120,7 +159,7 @@ class ContentService {
         return false;
       }
 
-      const rendered = this.renderContent(content, variables);
+      const rendered = this.renderContent(content, await this.mergeVars(ctx, variables));
       
       if (!rendered) {
         return false;
@@ -271,7 +310,7 @@ class ContentService {
         return false;
       }
 
-      const rendered = this.renderContent(content, variables);
+      const rendered = this.renderContent(content, await this.mergeVars(ctx, variables));
       
       if (!rendered || rendered.type !== 'text') {
         return false;

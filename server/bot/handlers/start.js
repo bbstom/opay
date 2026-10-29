@@ -432,6 +432,24 @@ async function accountInfo(ctx) {
     status: 'completed'
   });
 
+  const accountVars = {
+    username: user.username,
+    email: user.email || '未设置',
+    telegramId: String(user.telegramId || ''),
+    createdAt: new Date(user.createdAt).toLocaleDateString('zh-CN'),
+    totalOrders,
+    completedOrders,
+    pendingOrders: totalOrders - completedOrders
+  };
+
+  const { Markup } = require('telegraf');
+  const accountKeyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('📧 修改邮箱', 'change_email')],
+    [Markup.button.callback('« 返回主菜单', 'back_to_main')]
+  ]);
+  const sent = await contentService.sendContent(ctx, 'account_info', accountVars, accountKeyboard);
+  if (sent) return;
+
   const accountText = `👤 <b>个人中心</b>\n\n` +
     `📊 <b>账户信息</b>\n` +
     `━━━━━━━━━━━━━━━\n` +
@@ -446,13 +464,9 @@ async function accountInfo(ctx) {
     `<code>🔄 处理中：</code>${totalOrders - completedOrders}\n\n` +
     `💡 点击下方按钮修改邮箱`;
 
-  const { Markup } = require('telegraf');
   const options = { 
     parse_mode: 'HTML',
-    ...Markup.inlineKeyboard([
-      [Markup.button.callback('📧 修改邮箱', 'change_email')],
-      [Markup.button.callback('« 返回主菜单', 'back_to_main')]
-    ])
+    ...accountKeyboard
   };
 
   try {

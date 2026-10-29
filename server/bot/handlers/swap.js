@@ -3,6 +3,7 @@ const User = require('../../models/User');
 const Settings = require('../../models/Settings');
 const { getMainKeyboard } = require('../keyboards/main');
 const { generateSwapQRCode } = require('../utils/qrCodeGenerator');
+const contentService = require('../services/contentService');
 
 // 闪兑服务处理器
 const swapHandler = {
@@ -90,21 +91,25 @@ const swapHandler = {
         `4️⃣ TRX 自动转回您的地址\n\n` +
         `⚠️ 汇率实时变动，以到账时汇率为准`;
 
+      const rendered = await contentService.renderKey(ctx, 'swap_service', {
+        swapRate: rate,
+        swapLastUpdate: lastUpdate,
+        swapAddress: walletAddress,
+        swapNotice
+      });
+      const defaultMarkup = {
+        inline_keyboard: [
+          [{ text: '🔄 刷新汇率', callback_data: 'swap_service' }],
+          [{ text: '🔙 返回主菜单', callback_data: 'back_to_main' }]
+        ]
+      };
+
       await ctx.replyWithPhoto(
         { source: qrBuffer },
         {
-          caption: message,
-          parse_mode: 'HTML',
-          reply_markup: {
-            inline_keyboard: [
-              [
-                { text: '🔄 刷新汇率', callback_data: 'swap_service' }
-              ],
-              [
-                { text: '🔙 返回主菜单', callback_data: 'back_to_main' }
-              ]
-            ]
-          }
+          caption: rendered?.text || message,
+          parse_mode: rendered?.parseMode || 'HTML',
+          reply_markup: rendered?.buttons?.reply_markup || defaultMarkup
         }
       );
     } catch (error) {

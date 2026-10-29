@@ -33,6 +33,8 @@ const telegramGroupSchema = new mongoose.Schema({
   
   // 状态
   active: { type: Boolean, default: true }, // 是否活跃
+  allowBroadcast: { type: Boolean, default: true }, // 可被选进手动群发
+  energyFeed: { type: Boolean, default: false }, // 收能量租赁群公告
   
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }

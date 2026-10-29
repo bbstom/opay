@@ -2,6 +2,7 @@ const Settings = require('../../models/Settings');
 const User = require('../../models/User');
 const { generateEnergyQRCode } = require('../utils/qrCodeGenerator');
 const rewardService = require('../../services/rewardService');
+const contentService = require('../services/contentService');
 
 const sessionUserId = (ctx) => ctx.session?.user?._id;
 
@@ -51,8 +52,19 @@ const energyHandler = {
     await answerIfCallback(ctx);
     if (ctx.session) ctx.session.state = null;
 
-    const { cfg, priceTrx, priceEnergy, minAmount } = await loadEnergySettings();
+    const { cfg, priceTrx, priceEnergy, minAmount, notice } = await loadEnergySettings();
     const balance = await freshTrxBalance(sessionUserId(ctx));
+    const vars = {
+      energyPriceTrx: priceTrx,
+      energyPriceEnergy: Number(priceEnergy).toLocaleString(),
+      energyMinAmount: minAmount,
+      trxBalance: balance,
+      trxDepositMin: cfg.trxDepositMin,
+      energyNotice: notice || ''
+    };
+    const sent = await contentService.sendContent(ctx, 'energy_rental', vars, { reply_markup: menuKeyboard });
+    if (sent) return;
+
     const message =
       `⚡ <b>能量租赁</b>\n\n` +
       `━━━━━━━━━━━━━━━\n` +
