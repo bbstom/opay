@@ -103,12 +103,12 @@ const PublicNav = () => {
       <nav className="fixed top-0 w-full z-50 h-14 bg-white border-b border-slate-200/80">
         <div className="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <div onClick={() => navigate('/')} className="flex items-center gap-2 group cursor-pointer">
+            <div onClick={() => navigate('/')} className="flex items-center gap-2.5 group cursor-pointer">
               {siteLogo ? (
                 <img
                   src={siteLogo}
                   alt={siteName}
-                  className="w-7 h-7 object-contain group-hover:scale-110 transition-transform"
+                  className="h-10 w-auto max-w-[200px] object-contain group-hover:scale-105 transition-transform"
                   onError={(e) => {
                     e.target.style.display = 'none';
                     if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
@@ -289,7 +289,7 @@ export const PublicFooter = () => {
           <div className="space-y-3 md:col-span-2">
             <div className="flex items-center gap-2">
               {footerSettings.siteLogo ? (
-                <img src={footerSettings.siteLogo} alt={footerSettings.footerCompanyName || '可可代付'} className="w-8 h-8 object-contain" />
+                <img src={footerSettings.siteLogo} alt={footerSettings.footerCompanyName || '可可代付'} className="h-10 w-auto max-w-[180px] object-contain" />
               ) : (
                 <div className="w-8 h-8 bg-gradient-to-tr from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-cyan-200">
                   <Zap className="text-white" size={16} />
