@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Zap, Copy } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import axios from 'axios';
+import axios, { getApiError } from '../api/client';
+import { useAuth } from '../context/AuthContext';
 
 const EnergyRentalPage = () => {
+  const { user } = useAuth();
   const [walletAddress, setWalletAddress] = useState('');
   const [priceTrx, setPriceTrx] = useState(1);
   const [priceEnergy, setPriceEnergy] = useState(65000);
@@ -12,11 +15,28 @@ const EnergyRentalPage = () => {
   const [notice, setNotice] = useState('');
   const [loading, setLoading] = useState(true);
   const [ads, setAds] = useState([]);
+  const [trxBalance, setTrxBalance] = useState(null);
+  const [receiveAddress, setReceiveAddress] = useState('');
+  const [payAmount, setPayAmount] = useState('');
+  const [paying, setPaying] = useState(false);
 
   useEffect(() => {
     fetchEnergyInfo();
     fetchAds();
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setTrxBalance(null);
+      return;
+    }
+    axios.get('/api/rewards/me')
+      .then(({ data }) => {
+        setTrxBalance(data.trxBalance);
+        if (!payAmount) setPayAmount(String(data.energyMinAmount || minAmount));
+      })
+      .catch(() => setTrxBalance(null));
+  }, [user]);
 
   const fetchEnergyInfo = async () => {
     try {
@@ -49,9 +69,28 @@ const EnergyRentalPage = () => {
     alert('已复制到剪贴板');
   };
 
+  const previewEnergy = Math.floor((Number(payAmount) || 0) / (priceTrx || 1) * (priceEnergy || 0));
+
+  const handleBalancePay = async () => {
+    setPaying(true);
+    try {
+      const { data } = await axios.post('/api/rewards/energy', {
+        receiveAddress,
+        trxAmount: Number(payAmount)
+      });
+      alert(data.message || '能量租赁成功');
+      const me = await axios.get('/api/rewards/me');
+      setTrxBalance(me.data.trxBalance);
+    } catch (err) {
+      alert(getApiError(err, '余额支付失败'));
+    } finally {
+      setPaying(false);
+    }
+  };
+
   if (loading) {
     return (
-      <div className="bg-gradient-to-br from-slate-50 to-blue-50 pt-24 pb-8">
+      <div className="bg-gradient-to-br from-slate-50 to-blue-50 pt-16 pb-6">
         <div className="max-w-2xl mx-auto px-6 text-center">
           <p className="text-slate-600">加载中...</p>
         </div>
@@ -60,7 +99,7 @@ const EnergyRentalPage = () => {
   }
 
   return (
-    <div className="bg-gradient-to-br from-slate-50 to-blue-50 pt-24 pb-8">
+    <div className="bg-gradient-to-br from-slate-50 to-blue-50 pt-16 pb-6">
       <div className="max-w-4xl mx-auto px-4 w-full">
         {/* 标题 */}
         <div className="text-center mb-3">
@@ -154,6 +193,48 @@ const EnergyRentalPage = () => {
             <div className="text-center py-8">
               <p className="text-slate-500 text-sm mb-1">暂未配置能量租赁服务</p>
               <p className="text-xs text-slate-400">请联系管理员配置</p>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-lg mt-4">
+          <h2 className="text-base font-black text-slate-800 mb-1">TRX 余额支付</h2>
+          <p className="text-xs text-slate-500 mb-3">签到、邀请或自行充值的 TRX 可直接租赁能量到指定地址</p>
+          {!user ? (
+            <p className="text-sm text-slate-600">
+              请先 <Link to="/login?redirect=/energy-rental" className="text-orange-600 font-bold">登录</Link> 后使用余额付款
+            </p>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm">当前余额 <span className="font-black text-orange-600">{trxBalance ?? '--'} TRX</span></p>
+              <Link to="/my-rewards#deposit" className="text-xs font-bold text-orange-600 hover:underline inline-block">
+                去充值 TRX →
+              </Link>
+              <input
+                type="text"
+                value={receiveAddress}
+                onChange={(e) => setReceiveAddress(e.target.value.trim())}
+                placeholder="接收能量的 TRON 地址"
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-500"
+              />
+              <input
+                type="number"
+                min={minAmount}
+                step="0.1"
+                value={payAmount}
+                onChange={(e) => setPayAmount(e.target.value)}
+                placeholder={`最少 ${minAmount} TRX`}
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-500"
+              />
+              <p className="text-xs text-slate-500">预计获得 {previewEnergy.toLocaleString()} 能量</p>
+              <button
+                type="button"
+                disabled={paying}
+                onClick={handleBalancePay}
+                className="px-4 py-2 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white rounded-lg text-sm font-bold"
+              >
+                {paying ? '支付中...' : '余额支付'}
+              </button>
             </div>
           )}
         </div>

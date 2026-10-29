@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { HelpCircle, ChevronDown, ChevronUp } from 'lucide-react';
-import axios from 'axios';
+import axios from '../api/client';
 import SEOHead from '../components/SEOHead';
 
 const FAQPage = () => {
@@ -70,25 +70,25 @@ const FAQPage = () => {
           }))
         }}
       />
-      <section className="relative pt-24 pb-12 overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[300px] bg-gradient-to-b from-cyan-50/50 to-transparent -z-10"></div>
+      <section className="relative pt-16 pb-8 overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[180px] bg-gradient-to-b from-cyan-50/50 to-transparent -z-10"></div>
         
-        <div className="max-w-4xl mx-auto px-6">
+        <div className="max-w-4xl mx-auto px-4">
           {/* 头部 */}
-          <div className="text-center mb-8">
-            <div className="w-14 h-14 bg-gradient-to-tr from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-cyan-200">
-              <HelpCircle className="text-white" size={28} />
+          <div className="text-center mb-3">
+            <div className="w-12 h-12 bg-gradient-to-tr from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center mx-auto mb-2 shadow-lg shadow-cyan-200">
+              <HelpCircle className="text-white" size={24} />
             </div>
-            <h1 className="text-3xl font-black text-slate-900 mb-3 tracking-tight">常见问题</h1>
-            <p className="text-base text-slate-500 font-medium">快速找到您需要的答案</p>
+            <h1 className="text-2xl font-black text-slate-900 mb-1 tracking-tight">常见问题</h1>
+            <p className="text-sm text-slate-500">快速找到您需要的答案</p>
           </div>
 
           {/* 分类筛选 */}
           {categories.length > 0 && (
-            <div className="flex flex-wrap gap-2 justify-center mb-8">
+            <div className="flex flex-wrap gap-2 justify-center mb-4">
               <button
                 onClick={() => setSelectedCategory('all')}
-                className={`px-5 py-2 rounded-lg font-bold text-sm transition-all ${
+                className={`px-4 py-1.5 rounded-lg font-bold text-sm transition-all ${
                   selectedCategory === 'all'
                     ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-100'
                     : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
@@ -100,7 +100,7 @@ const FAQPage = () => {
                 <button
                   key={category}
                   onClick={() => setSelectedCategory(category)}
-                  className={`px-5 py-2 rounded-lg font-bold text-sm transition-all ${
+                  className={`px-4 py-1.5 rounded-lg font-bold text-sm transition-all ${
                     selectedCategory === category
                       ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-100'
                       : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
@@ -114,24 +114,24 @@ const FAQPage = () => {
 
           {/* FAQ列表 */}
           {loading ? (
-            <div className="text-center py-20">
+            <div className="text-center py-8">
               <p className="text-slate-500 font-medium">加载中...</p>
             </div>
           ) : filteredFaqs.length === 0 ? (
-            <div className="bg-white rounded-xl border border-slate-200 p-12 text-center shadow-sm">
+            <div className="bg-white rounded-lg border border-slate-200 p-6 text-center shadow-sm">
               <HelpCircle className="mx-auto mb-4 text-slate-300" size={40} />
               <p className="text-slate-500 font-medium">暂无常见问题</p>
             </div>
           ) : (
-            <div className="space-y-3 pb-12">
+            <div className="space-y-3 pb-6">
               {filteredFaqs.map((faq) => (
                 <div
                   key={faq._id}
-                  className="bg-white rounded-xl border border-slate-200 overflow-hidden transition-all hover:shadow-lg hover:border-cyan-200"
+                  className="bg-white rounded-lg border border-slate-200 overflow-hidden transition-all hover:shadow-lg hover:border-cyan-200"
                 >
                   <button
                     onClick={() => toggleExpand(faq._id)}
-                    className="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-slate-50 transition-all"
+                    className="w-full px-4 py-2.5 flex items-center justify-between text-left hover:bg-slate-50 transition-all"
                   >
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1.5">

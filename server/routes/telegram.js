@@ -1,24 +1,21 @@
 const express = require('express');
-const { auth } = require('../middleware/auth');
+const { auth, adminAuth } = require('../middleware/auth');
 const TelegramTemplate = require('../models/TelegramTemplate');
 const TelegramBroadcast = require('../models/TelegramBroadcast');
 const TelegramGroup = require('../models/TelegramGroup');
 const TelegramMenu = require('../models/TelegramMenu');
 const TelegramContent = require('../models/TelegramContent');
 const User = require('../models/User');
-const { getBotInstance } = require('../bot/index');
+const { getBotInstance } = require('../bot/MultiBotManager');
 
 const router = express.Router();
+router.use(auth, adminAuth);
 
 // ==================== 模板管理 ====================
 
 // 获取所有模板
-router.get('/templates', auth, async (req, res) => {
+router.get('/templates', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const templates = await TelegramTemplate.find().sort({ createdAt: -1 });
     res.json(templates);
   } catch (error) {
@@ -27,12 +24,8 @@ router.get('/templates', auth, async (req, res) => {
 });
 
 // 创建模板
-router.post('/templates', auth, async (req, res) => {
+router.post('/templates', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const template = await TelegramTemplate.create(req.body);
     res.status(201).json(template);
   } catch (error) {
@@ -41,12 +34,8 @@ router.post('/templates', auth, async (req, res) => {
 });
 
 // 更新模板
-router.put('/templates/:id', auth, async (req, res) => {
+router.put('/templates/:id', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const template = await TelegramTemplate.findByIdAndUpdate(
       req.params.id,
       { ...req.body, updatedAt: new Date() },
@@ -64,12 +53,8 @@ router.put('/templates/:id', auth, async (req, res) => {
 });
 
 // 删除模板
-router.delete('/templates/:id', auth, async (req, res) => {
+router.delete('/templates/:id', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const template = await TelegramTemplate.findByIdAndDelete(req.params.id);
 
     if (!template) {
@@ -83,12 +68,8 @@ router.delete('/templates/:id', auth, async (req, res) => {
 });
 
 // 预览模板
-router.post('/templates/:id/preview', auth, async (req, res) => {
+router.post('/templates/:id/preview', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const template = await TelegramTemplate.findById(req.params.id);
     if (!template) {
       return res.status(404).json({ error: '模板不存在' });
@@ -119,12 +100,8 @@ router.post('/templates/:id/preview', auth, async (req, res) => {
 // ==================== 群发管理 ====================
 
 // 获取所有群发
-router.get('/broadcasts', auth, async (req, res) => {
+router.get('/broadcasts', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const broadcasts = await TelegramBroadcast.find()
       .sort({ createdAt: -1 })
       .populate('createdBy', 'username');
@@ -136,12 +113,8 @@ router.get('/broadcasts', auth, async (req, res) => {
 });
 
 // 创建群发
-router.post('/broadcasts', auth, async (req, res) => {
+router.post('/broadcasts', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const broadcast = await TelegramBroadcast.create({
       ...req.body,
       createdBy: req.user.userId
@@ -154,12 +127,8 @@ router.post('/broadcasts', auth, async (req, res) => {
 });
 
 // 发送群发
-router.post('/broadcasts/:id/send', auth, async (req, res) => {
+router.post('/broadcasts/:id/send', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const broadcast = await TelegramBroadcast.findById(req.params.id);
     if (!broadcast) {
       return res.status(404).json({ error: '群发不存在' });
@@ -218,12 +187,8 @@ router.post('/broadcasts/:id/send', auth, async (req, res) => {
 });
 
 // 停止重复发送
-router.post('/broadcasts/:id/stop-repeat', auth, async (req, res) => {
+router.post('/broadcasts/:id/stop-repeat', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const broadcast = await TelegramBroadcast.findById(req.params.id);
     if (!broadcast) {
       return res.status(404).json({ error: '群发不存在' });
@@ -240,12 +205,8 @@ router.post('/broadcasts/:id/stop-repeat', auth, async (req, res) => {
 });
 
 // 手动触发重复发送（立即发送一次）
-router.post('/broadcasts/:id/trigger', auth, async (req, res) => {
+router.post('/broadcasts/:id/trigger', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const broadcast = await TelegramBroadcast.findById(req.params.id);
     if (!broadcast) {
       return res.status(404).json({ error: '群发不存在' });
@@ -265,12 +226,8 @@ router.post('/broadcasts/:id/trigger', auth, async (req, res) => {
 });
 
 // 获取群发定时器配置
-router.get('/broadcast-scheduler/config', auth, async (req, res) => {
+router.get('/broadcast-scheduler/config', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const broadcastScheduler = require('../services/broadcastScheduler');
     const config = broadcastScheduler.getConfig();
 
@@ -281,12 +238,8 @@ router.get('/broadcast-scheduler/config', auth, async (req, res) => {
 });
 
 // 更新群发定时器配置
-router.put('/broadcast-scheduler/config', auth, async (req, res) => {
+router.put('/broadcast-scheduler/config', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const { intervalMinutes } = req.body;
 
     if (!intervalMinutes || intervalMinutes < 1 || intervalMinutes > 1440) {
@@ -308,12 +261,8 @@ router.put('/broadcast-scheduler/config', auth, async (req, res) => {
 });
 
 // 手动触发定时检查（立即检查一次）
-router.post('/broadcast-scheduler/check', auth, async (req, res) => {
+router.post('/broadcast-scheduler/check', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const broadcastScheduler = require('../services/broadcastScheduler');
     
     // 异步执行
@@ -328,12 +277,8 @@ router.post('/broadcast-scheduler/check', auth, async (req, res) => {
 });
 
 // 获取群发统计
-router.get('/broadcasts/:id/stats', auth, async (req, res) => {
+router.get('/broadcasts/:id/stats', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const broadcast = await TelegramBroadcast.findById(req.params.id);
     if (!broadcast) {
       return res.status(404).json({ error: '群发不存在' });
@@ -353,12 +298,8 @@ router.get('/broadcasts/:id/stats', auth, async (req, res) => {
 });
 
 // 更新群发（仅草稿状态可编辑）
-router.put('/broadcasts/:id', auth, async (req, res) => {
+router.put('/broadcasts/:id', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const broadcast = await TelegramBroadcast.findById(req.params.id);
     if (!broadcast) {
       return res.status(404).json({ error: '群发不存在' });
@@ -380,12 +321,8 @@ router.put('/broadcasts/:id', auth, async (req, res) => {
 });
 
 // 删除群发（仅草稿和失败状态可删除）
-router.delete('/broadcasts/:id', auth, async (req, res) => {
+router.delete('/broadcasts/:id', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const broadcast = await TelegramBroadcast.findById(req.params.id);
     if (!broadcast) {
       return res.status(404).json({ error: '群发不存在' });
@@ -406,12 +343,8 @@ router.delete('/broadcasts/:id', auth, async (req, res) => {
 // ==================== 用户管理 ====================
 
 // 获取群组/频道列表
-router.get('/groups', auth, async (req, res) => {
+router.get('/groups', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const groups = await TelegramGroup.find({ active: true })
       .sort({ lastMessageAt: -1 });
     
@@ -422,12 +355,8 @@ router.get('/groups', auth, async (req, res) => {
 });
 
 // 刷新群组信息
-router.post('/groups/:chatId/refresh', auth, async (req, res) => {
+router.post('/groups/:chatId/refresh', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const botInstance = getBotInstance();
     if (!botInstance || !botInstance.bot) {
       return res.status(500).json({ error: 'Bot 未初始化' });
@@ -456,12 +385,8 @@ router.post('/groups/:chatId/refresh', auth, async (req, res) => {
 // ==================== 用户管理 ====================
 
 // 获取TG用户列表
-router.get('/users', auth, async (req, res) => {
+router.get('/users', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const users = await User.find({ 
       telegramId: { $exists: true, $ne: null }
     })
@@ -476,12 +401,8 @@ router.get('/users', auth, async (req, res) => {
 });
 
 // 获取TG统计
-router.get('/stats', auth, async (req, res) => {
+router.get('/stats', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const totalUsers = await User.countDocuments({ 
       telegramId: { $exists: true, $ne: null }
     });
@@ -512,12 +433,8 @@ router.get('/stats', auth, async (req, res) => {
 // ==================== 菜单管理 ====================
 
 // 获取主菜单配置
-router.get('/menu', auth, async (req, res) => {
+router.get('/menu', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     let menu = await TelegramMenu.findOne({ name: 'main_menu' });
     
     // 如果不存在，创建默认菜单
@@ -543,12 +460,8 @@ router.get('/menu', auth, async (req, res) => {
 });
 
 // 更新主菜单配置
-router.put('/menu', auth, async (req, res) => {
+router.put('/menu', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     let menu = await TelegramMenu.findOne({ name: 'main_menu' });
     
     if (!menu) {
@@ -570,12 +483,8 @@ router.put('/menu', auth, async (req, res) => {
 });
 
 // 重置为默认菜单
-router.post('/menu/reset', auth, async (req, res) => {
+router.post('/menu/reset', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     await TelegramMenu.deleteOne({ name: 'main_menu' });
 
     const menu = await TelegramMenu.create({
@@ -598,12 +507,8 @@ router.post('/menu/reset', auth, async (req, res) => {
 });
 
 // 获取可用的系统功能列表
-router.get('/menu/system-actions', auth, async (req, res) => {
+router.get('/menu/system-actions', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const systemActions = [
       { value: 'payment_usdt', label: 'USDT 代付', icon: '💰', category: '代付' },
       { value: 'payment_trx', label: 'TRX 代付', icon: '💎', category: '代付' },
@@ -624,12 +529,8 @@ router.get('/menu/system-actions', auth, async (req, res) => {
 // ==================== 内容管理 ====================
 
 // 获取所有内容配置
-router.get('/contents', auth, async (req, res) => {
+router.get('/contents', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const contents = await TelegramContent.find().sort({ category: 1, name: 1 });
     res.json(contents);
   } catch (error) {
@@ -638,12 +539,8 @@ router.get('/contents', auth, async (req, res) => {
 });
 
 // 获取单个内容配置
-router.get('/contents/:key', auth, async (req, res) => {
+router.get('/contents/:key', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const content = await TelegramContent.findOne({ key: req.params.key });
     if (!content) {
       return res.status(404).json({ error: '内容不存在' });
@@ -656,12 +553,8 @@ router.get('/contents/:key', auth, async (req, res) => {
 });
 
 // 创建内容配置（如果已存在则更新）
-router.post('/contents', auth, async (req, res) => {
+router.post('/contents', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const { key } = req.body;
     
     // 检查是否已存在
@@ -697,12 +590,8 @@ router.post('/contents', auth, async (req, res) => {
 });
 
 // 更新内容配置
-router.put('/contents/:key', auth, async (req, res) => {
+router.put('/contents/:key', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const content = await TelegramContent.findOneAndUpdate(
       { key: req.params.key },
       { ...req.body, updatedAt: new Date() },
@@ -720,12 +609,8 @@ router.put('/contents/:key', auth, async (req, res) => {
 });
 
 // 删除内容配置
-router.delete('/contents/:key', auth, async (req, res) => {
+router.delete('/contents/:key', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const content = await TelegramContent.findOneAndDelete({ key: req.params.key });
 
     if (!content) {
@@ -739,12 +624,8 @@ router.delete('/contents/:key', auth, async (req, res) => {
 });
 
 // 预览内容
-router.post('/contents/:key/preview', auth, async (req, res) => {
+router.post('/contents/:key/preview', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const content = await TelegramContent.findOne({ key: req.params.key });
     if (!content) {
       return res.status(404).json({ error: '内容不存在' });
@@ -777,12 +658,8 @@ router.post('/contents/:key/preview', auth, async (req, res) => {
 });
 
 // 初始化默认内容
-router.post('/contents/init-defaults', auth, async (req, res) => {
+router.post('/contents/init-defaults', async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const defaults = [
       {
         key: 'welcome_new_user',

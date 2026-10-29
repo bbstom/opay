@@ -1,19 +1,17 @@
 const express = require('express');
 const Settings = require('../models/Settings');
-const { auth } = require('../middleware/auth');
-const { encryptPrivateKey, decryptPrivateKey, isValidPrivateKey, getMasterKey } = require('../utils/encryption');
+const { auth, adminAuth } = require('../middleware/auth');
+const { encryptPrivateKey, isValidPrivateKey, getMasterKey } = require('../utils/encryption');
+const { redactTronApiNodes, mergeTronApiNodes } = require('../utils/secrets');
 const tronService = require('../services/tronService');
 const TronWeb = require('tronweb');
 
 const router = express.Router();
+router.use(auth, adminAuth);
 
 // 获取钱包配置（管理员）
-router.get('/config', auth, async (req, res) => {
+router.get('/config', async (req, res) => {
   try {
-    if (!req.user || req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const settings = await Settings.findOne();
     if (!settings) {
       return res.json({
@@ -40,11 +38,11 @@ router.get('/config', auth, async (req, res) => {
     res.json({
       tronWalletAddress: settings.tronWalletAddress || '',
       hasPrivateKey: !!settings.tronPrivateKeyEncrypted,
-      tronApiNodes: settings.tronApiNodes || JSON.stringify([
+      tronApiNodes: redactTronApiNodes(settings.tronApiNodes || JSON.stringify([
         { name: 'TronGrid', url: 'https://api.trongrid.io', apiKey: '', enabled: false },
         { name: 'ZAN', url: '', apiKey: '', enabled: false },
         { name: 'TronScan', url: '', apiKey: '', enabled: false }
-      ]),
+      ])),
       walletAutoTransferEnabled: settings.walletAutoTransferEnabled,
       walletMaxRetryCount: settings.walletMaxRetryCount,
       walletMinTRXBalance: settings.walletMinTRXBalance,
@@ -56,7 +54,8 @@ router.get('/config', auth, async (req, res) => {
       energyRentalAmountNormal: settings.energyRentalAmountNormal,
       energyRentalWaitTime: settings.energyRentalWaitTime,
       catfeeApiUrl: settings.catfeeApiUrl || 'https://api.catfee.io',
-      catfeeApiKey: settings.catfeeApiKey || '',
+      catfeeApiKey: '',
+      hasCatfeeApiKey: !!settings.catfeeApiKey,
       catfeeEnergyFirst: settings.catfeeEnergyFirst || 131000,
       catfeeEnergyNormal: settings.catfeeEnergyNormal || 65000,
       catfeePeriod: settings.catfeePeriod || 1
@@ -68,12 +67,8 @@ router.get('/config', auth, async (req, res) => {
 });
 
 // 更新钱包配置（管理员）
-router.put('/config', auth, async (req, res) => {
+router.put('/config', async (req, res) => {
   try {
-    if (!req.user || req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const {
       tronPrivateKey,
       walletAutoTransferEnabled,
@@ -89,7 +84,7 @@ router.put('/config', auth, async (req, res) => {
 
     // 更新 API 节点配置
     if (req.body.tronApiNodes) {
-      settings.tronApiNodes = req.body.tronApiNodes;
+      settings.tronApiNodes = mergeTronApiNodes(settings.tronApiNodes, req.body.tronApiNodes);
     }
 
     // 更新私钥（如果提供）
@@ -178,7 +173,7 @@ router.put('/config', auth, async (req, res) => {
     if (req.body.catfeeApiUrl) {
       settings.catfeeApiUrl = req.body.catfeeApiUrl;
     }
-    if (typeof req.body.catfeeApiKey !== 'undefined') {
+    if (typeof req.body.catfeeApiKey !== 'undefined' && String(req.body.catfeeApiKey).trim()) {
       settings.catfeeApiKey = req.body.catfeeApiKey;
     }
     if (req.body.catfeeEnergyFirst) {
@@ -221,12 +216,8 @@ router.put('/config', auth, async (req, res) => {
 });
 
 // 测试钱包连接（管理员）
-router.post('/test', auth, async (req, res) => {
+router.post('/test', async (req, res) => {
   try {
-    if (!req.user || req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const settings = await Settings.findOne();
     if (!settings || !settings.tronPrivateKeyEncrypted) {
       return res.status(400).json({ error: '未配置钱包私钥' });
@@ -254,12 +245,8 @@ router.post('/test', auth, async (req, res) => {
 });
 
 // 获取钱包余额（管理员）
-router.get('/balance', auth, async (req, res) => {
+router.get('/balance', async (req, res) => {
   try {
-    if (!req.user || req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const status = await tronService.checkWalletStatus();
     
     const settings = await Settings.findOne();
@@ -292,12 +279,8 @@ router.get('/balance', auth, async (req, res) => {
 });
 
 // 验证私钥格式（管理员）
-router.post('/validate-key', auth, async (req, res) => {
+router.post('/validate-key', async (req, res) => {
   try {
-    if (!req.user || req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const { privateKey } = req.body;
 
     if (!privateKey) {

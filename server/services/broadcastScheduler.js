@@ -2,6 +2,7 @@ const TelegramBroadcast = require('../models/TelegramBroadcast');
 const User = require('../models/User');
 const TelegramGroup = require('../models/TelegramGroup');
 const { getBotInstance } = require('../bot/MultiBotManager');
+const { withJobLock } = require('../utils/jobLock');
 
 class BroadcastScheduler {
   constructor() {
@@ -75,6 +76,7 @@ class BroadcastScheduler {
    * 检查并执行待发送的群发任务
    */
   async checkScheduledBroadcasts() {
+    return withJobLock('broadcast-scheduler', 4 * 60 * 1000, async () => {
     try {
       const now = new Date();
       
@@ -124,6 +126,7 @@ class BroadcastScheduler {
     } catch (error) {
       console.error('❌ 检查群发任务失败:', error);
     }
+    });
   }
 
   /**

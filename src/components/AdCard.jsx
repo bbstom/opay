@@ -11,7 +11,7 @@ const AdCard = ({ ad }) => {
   return (
     <div 
       onClick={handleClick}
-      className={`bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-all ${ad.link ? 'cursor-pointer hover:shadow-lg hover:border-cyan-200' : ''}`}
+      className={`bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden transition-all ${ad.link ? 'cursor-pointer hover:shadow-lg hover:border-cyan-200' : ''}`}
       style={{ width: ad.width ? `${ad.width}px` : 'auto', height: ad.height ? `${ad.height}px` : 'auto' }}
     >
       {ad.type === 'image' && ad.imageUrl ? (

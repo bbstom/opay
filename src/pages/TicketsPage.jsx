@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import { MessageSquare, Plus, Clock, CheckCircle, AlertCircle, Send, X } from 'lucide-react';
-import axios from 'axios';
+import axios from '../api/client';
 import UserLayout from '../components/UserLayout';
 
 const TicketsPage = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -23,12 +21,8 @@ const TicketsPage = () => {
   });
 
   useEffect(() => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
     fetchTickets();
-  }, [user, navigate, filterStatus]);
+  }, [filterStatus]);
 
   const fetchTickets = async () => {
     try {
@@ -125,8 +119,8 @@ const TicketsPage = () => {
 
   return (
     <UserLayout>
-      <div className="max-w-6xl mx-auto">
-        <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6 shadow-sm">
+      <div className="max-w-4xl mx-auto">
+        <div className="bg-white rounded-lg border border-slate-200 p-4 mb-4 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <select
@@ -158,7 +152,7 @@ const TicketsPage = () => {
             <p className="text-slate-500">加载中...</p>
           </div>
         ) : tickets.length === 0 ? (
-          <div className="bg-white rounded-xl border border-slate-200 p-12 text-center shadow-sm">
+          <div className="bg-white rounded-lg border border-slate-200 p-12 text-center shadow-sm">
             <MessageSquare className="mx-auto mb-4 text-slate-300" size={48} />
             <p className="text-slate-500 mb-4">还没有工单</p>
             <button
@@ -174,7 +168,7 @@ const TicketsPage = () => {
               <div
                 key={ticket._id}
                 onClick={() => setSelectedTicket(ticket)}
-                className="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg transition-all cursor-pointer"
+                className="bg-white rounded-lg border border-slate-200 p-4 hover:shadow-md transition-all cursor-pointer"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
@@ -202,7 +196,7 @@ const TicketsPage = () => {
 
         {showCreateModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
                 <h3 className="text-xl font-black text-slate-900">创建工单</h3>
                 <button
@@ -213,7 +207,7 @@ const TicketsPage = () => {
                 </button>
               </div>
 
-              <div className="p-6 space-y-4">
+              <div className="p-4 space-y-3">
                 <div>
                   <label className="text-sm font-bold text-slate-700 block mb-2">工单标题</label>
                   <input
@@ -287,7 +281,7 @@ const TicketsPage = () => {
 
         {selectedTicket && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
               <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
                 <div>
                   <h3 className="text-xl font-black text-slate-900">{selectedTicket.subject}</h3>
@@ -301,7 +295,7 @@ const TicketsPage = () => {
                 </button>
               </div>
 
-              <div className="p-6">
+              <div className="p-4">
                 <div className="flex items-center gap-3 mb-6">
                   {getStatusBadge(selectedTicket.status)}
                   {getPriorityBadge(selectedTicket.priority)}

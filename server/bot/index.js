@@ -325,6 +325,12 @@ class TelegramBot {
       case 'waiting_new_email':
         console.log('✅ 处理新邮箱');
         return startHandler.handleNewEmail(ctx);
+      case 'waiting_trx_deposit_hash':
+        return energyHandler.handleDepositHash(ctx);
+      case 'waiting_energy_balance_address':
+        return energyHandler.handleBalanceAddress(ctx);
+      case 'waiting_energy_balance_amount':
+        return energyHandler.handleBalanceAmount(ctx);
       default:
         console.log('⚠️  未知状态，显示默认消息');
         return ctx.reply(

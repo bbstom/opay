@@ -2,6 +2,7 @@ const axios = require('axios');
 const QRCode = require('qrcode');
 const { Markup } = require('telegraf');
 const { generatePaymentQRCode } = require('../utils/qrCodeGenerator');
+const { quoteServiceFee } = require('../../utils/tieredFee');
 const Settings = require('../../models/Settings');
 const Payment = require('../../models/Payment');
 const contentService = require('../services/contentService');
@@ -44,12 +45,13 @@ async function handleUSDTPayment(ctx) {
   try {
     // 获取限额
     const settings = await Settings.findOne();
-    const maxAmount = getMaxAmount(settings.tieredFeeRulesUSDT);
+    const maxAmount = getMaxAmount('USDT', settings);
+    const maxAmountLabel = formatMaxAmount(maxAmount);
 
     // 尝试使用自定义内容
     const sent = await contentService.sendContent(ctx, 'payment_usdt_input', {
       minAmount: 1,
-      maxAmount: maxAmount
+      maxAmount: maxAmountLabel
     }, getBackKeyboard());
 
     // 如果没有自定义内容，使用默认消息
@@ -59,7 +61,7 @@ async function handleUSDTPayment(ctx) {
         `📝 <b>请输入 USDT 数量</b>\n` +
         `━━━━━━━━━━━━━━━\n` +
         `<code>最小：</code>1 USDT\n` +
-        `<code>最大：</code>${maxAmount} USDT\n` +
+        `<code>最大：</code>${maxAmountLabel} USDT\n` +
         `━━━━━━━━━━━━━━━\n\n` +
         `💡 直接输入数字即可\n` +
         `例如：<code>100</code>`;
@@ -97,12 +99,13 @@ async function handleTRXPayment(ctx) {
 
   try {
     const settings = await Settings.findOne();
-    const maxAmount = getMaxAmount(settings.tieredFeeRulesTRX);
+    const maxAmount = getMaxAmount('TRX', settings);
+    const maxAmountLabel = formatMaxAmount(maxAmount);
 
     // 尝试使用自定义内容
     const sent = await contentService.sendContent(ctx, 'payment_trx_input', {
       minAmount: 1,
-      maxAmount: maxAmount
+      maxAmount: maxAmountLabel
     }, getBackKeyboard());
 
     // 如果没有自定义内容，使用默认消息
@@ -112,7 +115,7 @@ async function handleTRXPayment(ctx) {
         `📝 <b>请输入 TRX 数量</b>\n` +
         `━━━━━━━━━━━━━━━\n` +
         `<code>最小：</code>1 TRX\n` +
-        `<code>最大：</code>${maxAmount} TRX\n` +
+        `<code>最大：</code>${maxAmountLabel} TRX\n` +
         `━━━━━━━━━━━━━━━\n\n` +
         `💡 直接输入数字即可\n` +
         `例如：<code>100</code>`;
@@ -153,9 +156,9 @@ async function handleUSDTAmount(ctx) {
 
   try {
     const settings = await Settings.findOne();
-    const maxAmount = getMaxAmount(settings.tieredFeeRulesUSDT);
+    const maxAmount = getMaxAmount('USDT', settings);
 
-    if (amount > maxAmount) {
+    if (maxAmount != null && amount > maxAmount) {
       return ctx.reply(`❌ 超出限额！最大支持 ${maxAmount} USDT`);
     }
 
@@ -215,9 +218,9 @@ async function handleTRXAmount(ctx) {
 
   try {
     const settings = await Settings.findOne();
-    const maxAmount = getMaxAmount(settings.tieredFeeRulesTRX);
+    const maxAmount = getMaxAmount('TRX', settings);
 
-    if (amount > maxAmount) {
+    if (maxAmount != null && amount > maxAmount) {
       return ctx.reply(`❌ 超出限额！最大支持 ${maxAmount} TRX`);
     }
 
@@ -562,59 +565,22 @@ function formatAddress(address) {
   return `${address.slice(0, 6)}...${address.slice(-6)}`;
 }
 
-function getMaxAmount(rules) {
-  try {
-    const parsed = JSON.parse(rules || '[]');
-    const maxAmounts = parsed.map(r => r.maxAmount).filter(m => m < 999999);
-    return maxAmounts.length > 0 ? Math.max(...maxAmounts) : 200;
-  } catch {
-    return 200;
-  }
+function formatMaxAmount(cap) {
+  return cap == null ? '不限' : cap;
+}
+
+function getMaxAmount(type, settings) {
+  return quoteServiceFee(0, type, settings).cap;
 }
 
 function calculateFee(amount, type, settings) {
-  const rate = type === 'USDT' ? settings.exchangeRateUSDT : settings.exchangeRateTRX;
-  const cnyAmount = amount * rate;
-
-  // 获取阶梯费率规则
-  const tieredFeeEnabled = type === 'USDT' ? settings.tieredFeeEnabledUSDT : settings.tieredFeeEnabledTRX;
-  const tieredFeeRules = type === 'USDT' ? settings.tieredFeeRulesUSDT : settings.tieredFeeRulesTRX;
-
-  let serviceFee = 0;
-  let feeLabel = '';
-
-  if (tieredFeeEnabled) {
-    const rules = JSON.parse(tieredFeeRules || '[]');
-    const matchedRule = rules.find(rule => amount >= rule.minAmount && amount <= rule.maxAmount);
-
-    if (matchedRule) {
-      if (matchedRule.feeType === 'fixed') {
-        serviceFee = matchedRule.feeValue;
-        feeLabel = `[固定${serviceFee}]`;
-      } else {
-        serviceFee = parseFloat((cnyAmount * (matchedRule.feeValue / 100)).toFixed(2));
-        feeLabel = `[${matchedRule.feeValue}%]`;
-      }
-    }
-  } else {
-    // 使用默认费率
-    if (settings.feeType === 'fixed') {
-      serviceFee = type === 'USDT' ? settings.feeUSDT : settings.feeTRX;
-      feeLabel = `[固定${serviceFee}]`;
-    } else {
-      serviceFee = parseFloat((cnyAmount * (settings.feePercentage / 100)).toFixed(2));
-      feeLabel = `[${settings.feePercentage}%]`;
-    }
-  }
-
-  const totalCNY = cnyAmount + serviceFee;
-
+  const quoted = quoteServiceFee(amount, type, settings);
   return {
-    rate,
-    cnyAmount,
-    serviceFee,
-    feeLabel,
-    totalCNY
+    rate: quoted.rate,
+    cnyAmount: quoted.cnyAmount,
+    serviceFee: quoted.serviceFee,
+    feeLabel: quoted.feeLabel,
+    totalCNY: quoted.totalCNY
   };
 }
 

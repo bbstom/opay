@@ -3,6 +3,7 @@ const axios = require('axios');
 const SwapOrder = require('../models/SwapOrder');
 const Settings = require('../models/Settings');
 const emailService = require('./emailService');
+const { withJobLock } = require('../utils/jobLock');
 
 class SwapService {
   constructor() {
@@ -115,6 +116,7 @@ class SwapService {
 
   // 检查待处理的订单
   async checkPendingOrders() {
+    await withJobLock('swap-monitor', 20 * 1000, async () => {
     try {
       // 获取所有等待接收的订单
       const waitingOrders = await SwapOrder.find({
@@ -148,6 +150,7 @@ class SwapService {
     } catch (error) {
       console.error('❌ 检查闪兑订单失败:', error);
     }
+    });
   }
 
   // 检查订单是否收到USDT
@@ -276,10 +279,10 @@ class SwapService {
 
   // 初始化 TronWeb
   async initTronWeb(settings, wallet) {
-    const { decryptPrivateKey } = require('../utils/encryption');
+    const { decryptPrivateKey, getMasterKey } = require('../utils/encryption');
     
     // 解密私钥
-    const privateKey = decryptPrivateKey(wallet.privateKeyEncrypted);
+    const privateKey = decryptPrivateKey(wallet.privateKeyEncrypted, getMasterKey());
 
     // 获取API节点配置
     let apiNodes = [];
@@ -565,11 +568,21 @@ class SwapService {
       const swapMarkup = settings.swapRateMarkup || 0;
       const finalRate = baseRate * (1 - swapMarkup / 100);
 
+      let receiveAddress = '';
+      try {
+        const wallets = JSON.parse(settings.swapWallets || '[]');
+        const enabled = wallets.find((w) => w.enabled && w.address);
+        receiveAddress = enabled ? enabled.address : '';
+      } catch (e) {
+        receiveAddress = '';
+      }
+
       return {
         rate: parseFloat(finalRate.toFixed(6)),
         baseRate: parseFloat(baseRate.toFixed(6)),
         markup: swapMarkup,
-        mode: settings.swapRateMode
+        mode: settings.swapRateMode,
+        receiveAddress
       };
 
     } catch (error) {

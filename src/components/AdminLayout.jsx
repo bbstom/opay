@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import axios from 'axios';
+import axios from '../api/client';
 import { 
+  Gift,
   LayoutDashboard, 
   Image, 
   Settings, 
@@ -22,7 +23,9 @@ import {
   TrendingUp,
   ArrowDownUp,
   FileText,
-  AlertTriangle
+  AlertTriangle,
+  Shield,
+  Coins
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -67,7 +70,21 @@ const AdminLayout = ({ children }) => {
     },
     { path: '/finance', icon: <DollarSign size={20} />, label: '财务管理' },
     { path: '/user-manage', icon: <TrendingUp size={20} />, label: '用户管理' },
-    { path: '/telegram-manage', icon: <MessageSquare size={20} />, label: 'Telegram Bot' },
+    {
+      path: '/telegram-manage',
+      icon: <MessageSquare size={20} />,
+      label: 'Telegram Bot',
+      subItems: [
+        { id: 'bots', icon: <Key size={18} />, label: 'Bot Token' },
+        { id: 'commands', icon: <Zap size={18} />, label: '快捷指令' },
+        { id: 'menu', icon: <LayoutIcon size={18} />, label: '主菜单' },
+        { id: 'contents', icon: <FileText size={18} />, label: '内容管理' },
+        { id: 'templates', icon: <FileText size={18} />, label: '消息模板' },
+        { id: 'broadcasts', icon: <Share2 size={18} />, label: '群发消息' },
+        { id: 'broadcast-stats', icon: <TrendingUp size={18} />, label: '群发统计' },
+        { id: 'stats', icon: <TrendingUp size={18} />, label: '用户统计' }
+      ]
+    },
     { path: '/faq-manage', icon: <HelpCircle size={20} />, label: '常见问题' },
     { path: '/admin-tickets', icon: <MessageSquare size={20} />, label: '工单管理' },
     { 
@@ -93,13 +110,23 @@ const AdminLayout = ({ children }) => {
         { id: 'swap-limits', icon: <Settings size={18} />, label: '限额配置' }
       ]
     },
-    { 
-      path: '/energy-system', 
-      icon: <Zap size={20} />, 
-      label: '能量租赁系统',
+    {
+      path: '/energy-price',
+      icon: <Zap size={20} />,
+      label: '能量价格配置'
+    },
+    {
+      path: '/energy-balance',
+      icon: <Coins size={20} />,
+      label: '余额支付配置'
+    },
+    {
+      path: '/reward-system',
+      icon: <Gift size={20} />,
+      label: '邀请奖励',
       subItems: [
-        { id: 'address', icon: <Wallet size={18} />, label: '收款地址' },
-        { id: 'price', icon: <DollarSign size={18} />, label: '价格配置' }
+        { id: 'rules', icon: <Settings size={18} />, label: '规则配置' },
+        { id: 'withdraws', icon: <DollarSign size={18} />, label: '提现审核' }
       ]
     },
     { 
@@ -116,7 +143,8 @@ const AdminLayout = ({ children }) => {
         { id: 'payment', icon: <Key size={18} />, label: '支付配置' },
         { id: 'email', icon: <Mail size={18} />, label: '邮件配置' },
         { id: 'blog', icon: <FileText size={18} />, label: '博客配置' },
-        { id: 'alert', icon: <AlertTriangle size={18} />, label: '警告弹窗' }
+        { id: 'alert', icon: <AlertTriangle size={18} />, label: '警告弹窗' },
+        { id: 'security', icon: <Shield size={18} />, label: '登录安全' }
       ]
     },
     { path: '/seo-manage', icon: <Globe size={20} />, label: 'SEO 管理' },
@@ -182,13 +210,14 @@ const AdminLayout = ({ children }) => {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="min-h-screen bg-[#e8f4fc]">
+      <div className="max-w-7xl mx-auto min-h-screen flex bg-[#f5fbff] border-x border-slate-200/80">
       {/* 侧边栏 */}
-      <aside className={`fixed left-0 top-0 h-full bg-white border-r border-slate-200 transition-all duration-300 z-50 flex flex-col ${
+      <aside className={`sticky top-0 h-screen bg-white border-r border-slate-200 transition-all duration-300 z-40 flex flex-col flex-shrink-0 ${
         sidebarOpen ? 'w-56' : 'w-16'
       }`}>
         {/* Logo区域 */}
-        <div className="h-16 border-b border-slate-200 flex items-center justify-between px-4 flex-shrink-0">
+        <div className="h-14 border-b border-slate-200 flex items-center justify-between px-4 flex-shrink-0">
           {sidebarOpen && (
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 bg-gradient-to-tr from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center">
@@ -213,7 +242,7 @@ const AdminLayout = ({ children }) => {
                 onClick={() => handleNavigation(item.path)}
                 className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-all relative text-sm ${
                   isActive(item.path)
-                    ? 'bg-[#00A3FF] text-white shadow-lg shadow-[#00A3FF]/20'
+                    ? 'bg-[#0095ff] text-white'
                     : 'text-slate-600 hover:bg-slate-100'
                 } ${!sidebarOpen && 'justify-center'}`}
               >
@@ -240,7 +269,7 @@ const AdminLayout = ({ children }) => {
                         onClick={() => handleNavigation(item.path, subItem.id)}
                         className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all text-xs ${
                           isSubActive
-                            ? 'bg-[#E0F2FE] text-[#00A3FF] font-bold'
+                            ? 'bg-[#ebf7ff] text-[#0095ff] font-bold'
                             : 'text-slate-500 hover:bg-slate-50 font-medium'
                         }`}
                       >
@@ -270,26 +299,21 @@ const AdminLayout = ({ children }) => {
       </aside>
 
       {/* 主内容区域 */}
-      <main className={`flex-1 transition-all duration-300 ${
-        sidebarOpen ? 'ml-56' : 'ml-16'
-      } overflow-x-hidden pt-16`}>
-        {/* 顶部栏 - 固定在顶部 */}
-        <header className={`fixed top-0 h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-30 transition-all duration-300 ${
-          sidebarOpen ? 'left-56 right-0' : 'left-16 right-0'
-        }`}>
+      <main className="flex-1 min-w-0 overflow-x-hidden">
+        <header className="sticky top-0 h-14 bg-white border-b border-slate-200 flex items-center justify-between px-5 z-30">
           <div>
-            <h1 className="text-xl font-black text-slate-800">
+            <h1 className="text-lg font-bold text-slate-800">
               {menuItems.find(item => isActive(item.path))?.label || '管理后台'}
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">欢迎回来，管理员</p>
           </div>
         </header>
 
-        {/* 页面内容 */}
-        <div className="p-6 overflow-x-hidden">
+        <div className="p-4 overflow-x-hidden">
           {children}
         </div>
       </main>
+      </div>
     </div>
   );
 };

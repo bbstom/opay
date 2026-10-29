@@ -27,8 +27,8 @@ const SwapDetailPage = () => {
           "description": "快速的加密货币兑换服务"
         }}
       />
-      <div className="bg-white border-b border-slate-200 pt-20">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+      <div className="bg-white border-b border-slate-200 pt-14">
+        <div className="max-w-7xl mx-auto px-4 py-2">
           <div className="flex items-center gap-2 text-sm text-slate-600">
             <button onClick={() => navigate('/')} className="hover:text-cyan-600">首页</button>
             <span>/</span>
@@ -39,20 +39,20 @@ const SwapDetailPage = () => {
         </div>
       </div>
 
-      <section className="relative pt-20 pb-16">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[300px] bg-gradient-to-b from-purple-50/50 to-transparent -z-10"></div>
-        <div className="max-w-7xl mx-auto px-6">
+      <section className="relative pt-6 pb-8">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[180px] bg-gradient-to-b from-purple-50/50 to-transparent -z-10"></div>
+        <div className="max-w-7xl mx-auto px-4">
           <div className="max-w-4xl">
-            <h1 className="text-5xl lg:text-6xl font-black text-slate-900 leading-tight mb-6">
+            <h1 className="text-2xl font-black text-slate-900 leading-tight mb-2">
               TRX/USDT 闪兑服务
             </h1>
-            <p className="text-xl text-slate-600 leading-relaxed mb-8">
+            <p className="text-sm text-slate-600 mb-4">
               TRX 与 USDT 之间的快速兑换服务。实时汇率，秒级到账，支持大额交易。
               无需注册，输入地址即可兑换。
             </p>
             <button 
               onClick={() => navigate('/swap')}
-              className="bg-purple-500 text-white px-8 py-4 rounded-2xl font-black hover:bg-purple-600 transition-all shadow-xl flex items-center gap-2"
+              className="bg-purple-500 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-purple-600 transition-all shadow-sm flex items-center gap-2"
             >
               立即兑换 <ArrowRight size={20} />
             </button>
@@ -60,11 +60,11 @@ const SwapDetailPage = () => {
         </div>
       </section>
 
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-6">
+      <section className="py-8 bg-white">
+        <div className="max-w-7xl mx-auto px-4">
           <div className="max-w-4xl">
-            <h2 className="text-3xl font-black text-slate-900 mb-6">什么是闪兑？</h2>
-            <div className="prose prose-lg text-slate-600 space-y-4">
+            <h2 className="text-xl font-bold text-slate-900 mb-6">什么是闪兑？</h2>
+            <div className="prose prose-sm text-slate-600 space-y-4">
               <p>
                 闪兑是一种快速的加密货币兑换服务，支持 TRX 和 USDT 之间的互换。
                 采用市场实时汇率，公开透明，1-3 分钟内完成兑换并到账。
@@ -75,26 +75,26 @@ const SwapDetailPage = () => {
               </p>
             </div>
 
-            <h2 className="text-3xl font-black text-slate-900 mb-6 mt-12">闪兑原理</h2>
-            <div className="prose prose-lg text-slate-600 space-y-4">
+            <h2 className="text-xl font-bold text-slate-900 mb-6 mt-6">闪兑原理</h2>
+            <div className="prose prose-sm text-slate-600 space-y-4">
               <p>
                 闪兑服务基于智能合约和流动性池技术，实现快速、安全的资产兑换：
               </p>
-              <div className="bg-purple-50 border-l-4 border-purple-500 p-6 my-6">
+              <div className="bg-purple-50 border-l-4 border-purple-500 p-4 my-6">
                 <h3 className="text-xl font-bold text-slate-900 mb-3">1. 实时汇率</h3>
                 <p className="mb-0">
                   我们的汇率来自多个主流交易所的实时价格，通过算法加权平均得出。
                   汇率每 10 秒更新一次，确保您获得最公平的价格。
                 </p>
               </div>
-              <div className="bg-blue-50 border-l-4 border-blue-500 p-6 my-6">
+              <div className="bg-blue-50 border-l-4 border-blue-500 p-4 my-6">
                 <h3 className="text-xl font-bold text-slate-900 mb-3">2. 流动性保障</h3>
                 <p className="mb-0">
                   我们维护充足的 TRX 和 USDT 流动性池，确保大额兑换也能快速成交。
                   单笔支持 10 万 USDT 以上的兑换，满足机构级需求。
                 </p>
               </div>
-              <div className="bg-green-50 border-l-4 border-green-500 p-6 my-6">
+              <div className="bg-green-50 border-l-4 border-green-500 p-4 my-6">
                 <h3 className="text-xl font-bold text-slate-900 mb-3">3. 秒级到账</h3>
                 <p className="mb-0">
                   收到您的资产后，系统自动执行兑换并转账。整个过程通常在 1-3 分钟内完成，
@@ -102,11 +102,11 @@ const SwapDetailPage = () => {
                 </p>
               </div>
 
-              <h3 className="text-2xl font-bold text-slate-900 mt-8 mb-4">汇率如何确定？</h3>
+              <h3 className="text-lg font-bold text-slate-900 mt-8 mb-4">汇率如何确定？</h3>
               <p>
                 我们的汇率计算公式：
               </p>
-              <div className="bg-slate-50 rounded-xl p-6 my-6">
+              <div className="bg-slate-50 rounded-lg p-4 my-6">
                 <p className="font-mono text-sm mb-4">
                   最终汇率 = 市场汇率 × (1 - 手续费率)
                 </p>
@@ -116,7 +116,7 @@ const SwapDetailPage = () => {
                 </p>
               </div>
 
-              <h3 className="text-2xl font-bold text-slate-900 mt-8 mb-4">为什么能秒级到账？</h3>
+              <h3 className="text-lg font-bold text-slate-900 mt-8 mb-4">为什么能秒级到账？</h3>
               <p>
                 传统交易所需要充值、挂单、成交、提现等多个步骤，整个过程可能需要几小时甚至几天。
                 而闪兑服务采用预先准备的流动性池，收到资产后立即转账，大大缩短了时间：
@@ -129,8 +129,8 @@ const SwapDetailPage = () => {
               </ul>
             </div>
 
-            <h2 className="text-3xl font-black text-slate-900 mb-6 mt-12">优势对比</h2>
-            <div className="prose prose-lg text-slate-600 space-y-4">
+            <h2 className="text-xl font-bold text-slate-900 mb-6 mt-6">优势对比</h2>
+            <div className="prose prose-sm text-slate-600 space-y-4">
               <p>
                 相比其他兑换方式，闪兑服务具有明显优势：
               </p>
@@ -186,9 +186,9 @@ const SwapDetailPage = () => {
               </div>
             </div>
 
-            <h2 className="text-3xl font-black text-slate-900 mb-6 mt-12">使用技巧</h2>
-            <div className="prose prose-lg text-slate-600 space-y-4">
-              <h3 className="text-2xl font-bold text-slate-900 mt-8 mb-4">最佳兑换时机</h3>
+            <h2 className="text-xl font-bold text-slate-900 mb-6 mt-6">使用技巧</h2>
+            <div className="prose prose-sm text-slate-600 space-y-4">
+              <h3 className="text-lg font-bold text-slate-900 mt-8 mb-4">最佳兑换时机</h3>
               <p>
                 虽然我们提供实时汇率，但选择合适的时机兑换可以获得更好的价格：
               </p>
@@ -199,8 +199,8 @@ const SwapDetailPage = () => {
                 <li><strong>关注市场动态</strong>：重大新闻发布前后，价格可能波动</li>
               </ul>
 
-              <h3 className="text-2xl font-bold text-slate-900 mt-8 mb-4">如何获得更好的汇率？</h3>
-              <div className="bg-blue-50 rounded-xl p-6 my-6">
+              <h3 className="text-lg font-bold text-slate-900 mt-8 mb-4">如何获得更好的汇率？</h3>
+              <div className="bg-blue-50 rounded-lg p-4 my-6">
                 <h4 className="text-lg font-bold text-slate-900 mb-3">💡 省钱技巧</h4>
                 <ul className="list-disc pl-6 space-y-2">
                   <li><strong>大额兑换</strong>：单笔 10,000 USDT 以上享受 VIP 费率</li>
@@ -210,7 +210,7 @@ const SwapDetailPage = () => {
                 </ul>
               </div>
 
-              <h3 className="text-2xl font-bold text-slate-900 mt-8 mb-4">大额兑换注意事项</h3>
+              <h3 className="text-lg font-bold text-slate-900 mt-8 mb-4">大额兑换注意事项</h3>
               <p>
                 如果您需要兑换大额资产（10 万 USDT 以上），建议：
               </p>
@@ -222,9 +222,9 @@ const SwapDetailPage = () => {
               </ul>
             </div>
 
-            <h2 className="text-3xl font-black text-slate-900 mb-6 mt-12">使用场景</h2>
-            <div className="prose prose-lg text-slate-600 space-y-4">
-              <h3 className="text-2xl font-bold text-slate-900 mt-8 mb-4">1. 个人资产配置</h3>
+            <h2 className="text-xl font-bold text-slate-900 mb-6 mt-6">使用场景</h2>
+            <div className="prose prose-sm text-slate-600 space-y-4">
+              <h3 className="text-lg font-bold text-slate-900 mt-8 mb-4">1. 个人资产配置</h3>
               <p>
                 根据市场行情，灵活调整 TRX 和 USDT 的持仓比例：
               </p>
@@ -235,7 +235,7 @@ const SwapDetailPage = () => {
                 <li>需要支付能量费时，将 USDT 兑换为 TRX</li>
               </ul>
 
-              <h3 className="text-2xl font-bold text-slate-900 mt-8 mb-4">2. 套利交易</h3>
+              <h3 className="text-lg font-bold text-slate-900 mt-8 mb-4">2. 套利交易</h3>
               <p>
                 利用不同平台的价差进行套利：
               </p>
@@ -246,7 +246,7 @@ const SwapDetailPage = () => {
                 <li>赚取价差收益</li>
               </ul>
 
-              <h3 className="text-2xl font-bold text-slate-900 mt-8 mb-4">3. 商户收款</h3>
+              <h3 className="text-lg font-bold text-slate-900 mt-8 mb-4">3. 商户收款</h3>
               <p>
                 如果您接受加密货币支付，闪兑可以帮助您快速转换为稳定币：
               </p>
@@ -257,7 +257,7 @@ const SwapDetailPage = () => {
                 <li>方便财务管理</li>
               </ul>
 
-              <h3 className="text-2xl font-bold text-slate-900 mt-8 mb-4">4. 应急周转</h3>
+              <h3 className="text-lg font-bold text-slate-900 mt-8 mb-4">4. 应急周转</h3>
               <p>
                 当您急需某种资产时，闪兑提供最快的解决方案：
               </p>
@@ -269,9 +269,9 @@ const SwapDetailPage = () => {
               </ul>
             </div>
 
-            <h2 className="text-3xl font-black text-slate-900 mb-6 mt-12">实际案例</h2>
-            <div className="prose prose-lg text-slate-600 space-y-4">
-              <div className="bg-slate-50 rounded-xl p-6 my-6">
+            <h2 className="text-xl font-bold text-slate-900 mb-6 mt-6">实际案例</h2>
+            <div className="prose prose-sm text-slate-600 space-y-4">
+              <div className="bg-slate-50 rounded-lg p-4 my-6">
                 <h3 className="text-xl font-bold text-slate-900 mb-3">案例 1：套利交易者</h3>
                 <p className="text-slate-600 mb-3">
                   某交易者发现 TRX 在不同交易所存在 2% 的价差。他在低价交易所买入 10 万 TRX，
@@ -282,7 +282,7 @@ const SwapDetailPage = () => {
                 </p>
               </div>
 
-              <div className="bg-slate-50 rounded-xl p-6 my-6">
+              <div className="bg-slate-50 rounded-lg p-4 my-6">
                 <h3 className="text-xl font-bold text-slate-900 mb-3">案例 2：DApp 开发者</h3>
                 <p className="text-slate-600 mb-3">
                   某 DApp 项目收到用户的 TRX 付款，需要快速转换为 USDT 用于运营支出。
@@ -293,7 +293,7 @@ const SwapDetailPage = () => {
                 </p>
               </div>
 
-              <div className="bg-slate-50 rounded-xl p-6 my-6">
+              <div className="bg-slate-50 rounded-lg p-4 my-6">
                 <h3 className="text-xl font-bold text-slate-900 mb-3">案例 3：投资者资产配置</h3>
                 <p className="text-slate-600 mb-3">
                   某投资者持有大量 TRX，当 TRX 价格上涨 20% 时，他通过闪兑服务将 30% 的 TRX 
@@ -305,7 +305,7 @@ const SwapDetailPage = () => {
               </div>
             </div>
 
-            <h2 className="text-3xl font-black text-slate-900 mb-6 mt-12">常见问题</h2>
+            <h2 className="text-xl font-bold text-slate-900 mb-6 mt-6">常见问题</h2>
             <div className="space-y-6">
               <div className="border-l-4 border-purple-500 pl-6">
                 <h3 className="text-xl font-bold text-slate-900 mb-2">兑换需要多久到账？</h3>
@@ -356,8 +356,8 @@ const SwapDetailPage = () => {
               </div>
             </div>
 
-            <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-8 mt-12">
-              <h3 className="text-2xl font-bold text-slate-900 mb-4">立即开始兑换</h3>
+            <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4 mt-6">
+              <h3 className="text-lg font-bold text-slate-900 mb-4">立即开始兑换</h3>
               <p className="text-slate-600 mb-6">
                 无需注册，输入地址即可兑换。查看我们的 <button onClick={() => navigate('/guides/beginner')} className="text-purple-600 hover:underline font-semibold">使用教程</button> 了解详细步骤，
                 或查看 <button onClick={() => navigate('/guides/faq')} className="text-purple-600 hover:underline font-semibold">常见问题</button> 获取更多帮助。
@@ -365,7 +365,7 @@ const SwapDetailPage = () => {
               </p>
               <button 
                 onClick={() => navigate('/swap')}
-                className="bg-purple-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-purple-600 transition-all"
+                className="bg-purple-500 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-purple-600 transition-all"
               >
                 立即开始兑换
               </button>
@@ -374,12 +374,12 @@ const SwapDetailPage = () => {
         </div>
       </section>
 
-      <section className="py-16 bg-gradient-to-br from-purple-500 to-pink-600 text-white">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <h2 className="text-4xl font-black mb-6">准备开始兑换？</h2>
+      <section className="py-8 bg-gradient-to-br from-purple-500 to-pink-600 text-white">
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <h2 className="text-xl font-bold mb-6">准备开始兑换？</h2>
           <button 
             onClick={() => navigate('/swap')}
-            className="bg-white text-purple-600 px-10 py-4 rounded-2xl font-black hover:bg-purple-50 transition-all shadow-xl"
+            className="bg-white text-purple-600 px-4 py-2 rounded-lg font-bold text-sm hover:bg-purple-50 transition-all shadow-sm"
           >
             立即兑换
           </button>

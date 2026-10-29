@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import axios from 'axios';
+import api, { AUTH_CLEARED_EVENT } from '../api/client';
 
 const AuthContext = createContext();
 
@@ -9,64 +9,91 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      fetchUser();
-    } else {
-      setLoading(false);
-    }
-  }, []);
-
   const fetchUser = async () => {
     try {
-      const { data } = await axios.get('/api/auth/me');
+      const { data } = await api.get('/api/auth/me');
       setUser(data);
     } catch (error) {
-      localStorage.removeItem('token');
-      delete axios.defaults.headers.common['Authorization'];
+      setUser(null);
     } finally {
       setLoading(false);
     }
   };
 
-  const login = async (email, password) => {
-    const { data } = await axios.post('/api/auth/login', { email, password });
-    localStorage.setItem('token', data.token);
-    axios.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+  useEffect(() => {
+    fetchUser();
+
+    const onCleared = () => setUser(null);
+    window.addEventListener(AUTH_CLEARED_EVENT, onCleared);
+    return () => window.removeEventListener(AUTH_CLEARED_EVENT, onCleared);
+  }, []);
+
+  const login = async (username, password) => {
+    const { data } = await api.post('/api/auth/login', { username, password });
+    if (!data.requiresTwoFactor) setUser(data.user);
+    return data;
+  };
+
+  const verifyTwoFactor = async (code) => {
+    const { data } = await api.post('/api/auth/login/2fa', { code });
     setUser(data.user);
     return data;
   };
 
-  const register = async (username, email, password) => {
-    const { data } = await axios.post('/api/auth/register', { username, email, password });
-    localStorage.setItem('token', data.token);
-    axios.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
-    setUser(data.user);
+  const sendRegisterCode = async (email) => {
+    const { data } = await api.post('/api/auth/send-register-code', { email });
+    return data;
+  };
+
+  const sendResetCode = async (email) => {
+    const { data } = await api.post('/api/auth/send-reset-code', { email });
+    return data;
+  };
+
+  const resetPassword = async (email, code, password) => {
+    const { data } = await api.post('/api/auth/reset-password', { email, code, password });
+    return data;
+  };
+
+  const register = async (username, email, password, code, inviteCode) => {
+    const { data } = await api.post('/api/auth/register', { username, email, password, code, inviteCode });
+    if (data.user) setUser(data.user);
     return data;
   };
 
   const telegramLogin = async (telegramData) => {
-    const { data } = await axios.post('/api/auth/telegram-login', telegramData);
-    localStorage.setItem('token', data.token);
-    axios.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
-    setUser(data.user);
+    const { data } = await api.post('/api/auth/telegram-login', telegramData);
+    if (!data.requiresTwoFactor) setUser(data.user);
     return data;
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    delete axios.defaults.headers.common['Authorization'];
+  const logout = async () => {
+    try {
+      await api.post('/api/auth/logout');
+    } catch {
+      // 本地也清掉登录态
+    }
     setUser(null);
   };
 
   const updateUser = (updatedUserData) => {
-    setUser(prev => ({ ...prev, ...updatedUserData }));
+    setUser((prev) => ({ ...prev, ...updatedUserData }));
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, telegramLogin, logout, updateUser, loading }}>
+    <AuthContext.Provider value={{
+      user,
+      login,
+      verifyTwoFactor,
+      register,
+      sendRegisterCode,
+      sendResetCode,
+      resetPassword,
+      telegramLogin,
+      logout,
+      updateUser,
+      loading
+    }}>
       {children}
     </AuthContext.Provider>
   );

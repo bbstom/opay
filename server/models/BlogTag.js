@@ -18,7 +18,6 @@ const blogTagSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// 索引
-blogTagSchema.index({ slug: 1 });
+// slug 已 unique，无需重复 index
 
 module.exports = mongoose.model('BlogTag', blogTagSchema);

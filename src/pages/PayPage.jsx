@@ -1,16 +1,21 @@
 import { useState, useEffect, useRef } from 'react';
 import { Wallet, History, ExternalLink, ArrowRight, ShieldCheck, QrCode, X, CheckCircle, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
-import { AlipayIcon, WechatIcon, USDTIcon } from '../components/Icons';
+import { useSettingsOptional } from '../context/SettingsContext';
+import axios from '../api/client';
+import { AlipayIcon, WechatIcon, USDTIcon, TRXIcon } from '../components/Icons';
 import { Html5Qrcode } from 'html5-qrcode';
 import jsQR from 'jsqr';
+import { quoteServiceFee } from '../utils/tieredFee';
 
 // 移除未使用的组件定义
 
-const PayPage = () => {
+const PayPage = ({ forcedPayType = 'USDT' }) => {
   const { user } = useAuth();
-  const payType = 'USDT'; // 固定为USDT
+  const settingsCtx = useSettingsOptional();
+  const payType = forcedPayType === 'TRX' ? 'TRX' : 'USDT';
+  const isUSDT = payType === 'USDT';
+  const CoinIcon = isUSDT ? USDTIcon : TRXIcon;
   const [amount, setAmount] = useState('');
   const [address, setAddress] = useState('');
   const [email, setEmail] = useState('');
@@ -19,7 +24,7 @@ const PayPage = () => {
   const [orderId, setOrderId] = useState('');
   const [scrollOffset, setScrollOffset] = useState(0);
   const [ads, setAds] = useState([]);
-  const [settings, setSettings] = useState(null);
+  const [settings, setSettings] = useState(settingsCtx?.settings || null);
   const [showPayment, setShowPayment] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState('');
   const [currentOrderId, setCurrentOrderId] = useState('');
@@ -57,6 +62,22 @@ const PayPage = () => {
       clearInterval(interval);
     };
   }, []);
+
+  useEffect(() => {
+    if (settingsCtx?.settings) applySettings(settingsCtx.settings);
+  }, [settingsCtx?.settings]);
+
+  const applySettings = (data) => {
+    if (!data) return;
+    setSettings(data);
+    if (data.workspaceAlertEnabled && data.workspaceAlertContent) {
+      const dontShowDate = localStorage.getItem('workspaceAlertDontShowDate');
+      const today = new Date().toDateString();
+      if (dontShowDate !== today) {
+        setShowAlert(true);
+      }
+    }
+  };
 
   // 轮询滚动效果
   useEffect(() => {
@@ -100,19 +121,7 @@ const PayPage = () => {
   const fetchSettings = async () => {
     try {
       const { data } = await axios.get('/api/settings/public');
-      setSettings(data);
-      
-      // 检查是否需要显示警告弹窗
-      if (data.workspaceAlertEnabled && data.workspaceAlertContent) {
-        // 检查 localStorage，看今天是否已经选择不再提示
-        const dontShowDate = localStorage.getItem('workspaceAlertDontShowDate');
-        const today = new Date().toDateString();
-        
-        if (dontShowDate !== today) {
-          // 如果不是今天设置的，或者没有设置，则显示弹窗
-          setShowAlert(true);
-        }
-      }
+      applySettings(data);
     } catch (error) {
       console.error('获取设置失败:', error);
     }
@@ -132,127 +141,11 @@ const PayPage = () => {
     setShowAlert(false);
   };
 
-  const calculateServiceFee = () => {
-    if (!settings) return 0;
-    const amt = parseFloat(amount) || 0;
-    
-    // 如果启用了 USDT 阶梯费率
-    if (settings.tieredFeeEnabledUSDT) {
-      try {
-        const rules = JSON.parse(settings.tieredFeeRulesUSDT || '[]');
-        
-        console.log('🔍 USDT 阶梯费率已启用');
-        console.log('📊 当前金额:', amt, 'USDT');
-        console.log('📋 费率规则:', rules);
-        
-        // 查找匹配的费率规则（修改为 <= 包含最大值）
-        const matchedRule = rules.find(rule => 
-          amt >= rule.minAmount && amt <= rule.maxAmount
-        );
-        
-        if (matchedRule) {
-          console.log('✅ 匹配到规则:', matchedRule);
-          
-          if (matchedRule.feeType === 'fixed') {
-            // 固定费用
-            console.log('💰 固定费用:', matchedRule.feeValue, 'CNY');
-            return matchedRule.feeValue;
-          } else {
-            // 百分比费率 - 基于 CNY 金额计算
-            const cnyAmount = amt * getExchangeRate(payType);
-            const fee = (cnyAmount * (matchedRule.feeValue / 100)).toFixed(2);
-            console.log('💰 百分比费率:', matchedRule.feeValue + '%', 'CNY金额:', cnyAmount, '服务费:', fee, 'CNY');
-            return parseFloat(fee);
-          }
-        } else {
-          console.log('⚠️ 未匹配到任何规则，使用默认费率');
-        }
-      } catch (error) {
-        console.error('❌ 阶梯费率计算失败:', error);
-      }
-    } else {
-      console.log('ℹ️ USDT 阶梯费率未启用，使用传统费率');
-    }
-    
-    // 使用传统费率
-    if (settings.feeType === 'fixed') {
-      return payType === 'USDT' ? settings.feeUSDT : settings.feeTRX;
-    } else {
-      // 百分比费率 - 基于 CNY 金额计算
-      const cnyAmount = amt * getExchangeRate(payType);
-      return parseFloat((cnyAmount * (settings.feePercentage / 100)).toFixed(2));
-    }
-  };
+  const feeQuote = quoteServiceFee(amount, payType, settings);
 
-  // 获取费率类型说明
-  const getFeeTypeLabel = () => {
-    if (!settings) return '';
-    const amt = parseFloat(amount) || 0;
-    
-    // 如果启用了 USDT 阶梯费率
-    if (settings.tieredFeeEnabledUSDT) {
-      try {
-        const rules = JSON.parse(settings.tieredFeeRulesUSDT || '[]');
-        const matchedRule = rules.find(rule => 
-          amt >= rule.minAmount && amt <= rule.maxAmount
-        );
-        
-        if (matchedRule) {
-          if (matchedRule.feeType === 'fixed') {
-            return `[固定${matchedRule.feeValue}]`;
-          } else {
-            return `[${matchedRule.feeValue}%]`;
-          }
-        }
-      } catch (error) {
-        console.error('获取费率类型失败:', error);
-      }
-    }
-    
-    // 使用传统费率
-    if (settings.feeType === 'fixed') {
-      const fixedFee = payType === 'USDT' ? settings.feeUSDT : settings.feeTRX;
-      return `[固定${fixedFee}]`;
-    } else {
-      return `[${settings.feePercentage}%]`;
-    }
-  };
-
-  // 获取阶梯费率的最大限额
-  const getMaxAmount = () => {
-    if (!settings) return null;
-    
-    try {
-      if (settings.tieredFeeEnabledUSDT) {
-        const rules = JSON.parse(settings.tieredFeeRulesUSDT || '[]');
-        if (rules.length === 0) return null;
-        
-        // 找到最大的 maxAmount（排除 999999 这种无限大的值）
-        const maxAmounts = rules
-          .map(rule => rule.maxAmount)
-          .filter(max => max < 999999);
-        
-        if (maxAmounts.length === 0) return null; // 如果都是无限大，返回 null
-        return Math.max(...maxAmounts);
-      }
-    } catch (error) {
-      console.error('获取最大限额失败:', error);
-    }
-    
-    return null;
-  };
-
-  // 检查金额是否超出限额
-  const checkAmountLimit = () => {
-    const amt = parseFloat(amount) || 0;
-    const maxAmount = getMaxAmount();
-    
-    if (maxAmount && amt > maxAmount) {
-      return `当前代付金额超出限额！最大支持 ${maxAmount} USDT`;
-    }
-    
-    return null;
-  };
+  const calculateServiceFee = () => feeQuote.serviceFee;
+  const getFeeTypeLabel = () => feeQuote.feeLabel;
+  const checkAmountLimit = () => feeQuote.error;
 
   const calculateCNY = () => {
     const amt = parseFloat(amount) || 0;
@@ -271,7 +164,7 @@ const PayPage = () => {
     return (base + fee).toFixed(2);
   };
 
-  const currentRateDisplay = `1 USDT = ${getExchangeRate('USDT').toFixed(2)} CNY`;
+  const currentRateDisplay = `1 ${payType} = ${getExchangeRate(payType).toFixed(2)} CNY`;
 
   // 开始扫描二维码
   const startScanner = async () => {
@@ -580,11 +473,11 @@ const PayPage = () => {
   };
 
   if (!settings) {
-    return <div className="pt-32 text-center">加载中...</div>;
+    return <div className="pt-16 pb-6 text-center text-sm text-slate-500">加载中...</div>;
   }
 
   return (
-    <div className="animate-in fade-in duration-500 pt-28 pb-20 min-h-screen relative overflow-hidden">
+    <div className="bg-gradient-to-br from-slate-50 to-blue-50 pt-16 pb-6 min-h-screen">
       {/* 警告弹窗 - 优化版 */}
       {showAlert && settings?.workspaceAlertEnabled && settings?.workspaceAlertContent && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
@@ -667,9 +560,7 @@ const PayPage = () => {
         </div>
       )}
       
-      {/* 渐变背景 */}
-      <div className="absolute top-0 left-0 w-full h-[800px] bg-gradient-to-br from-[#F0F9FF] via-[#E0F2FE] to-[#F8FAFC] -z-10"></div>
-      
+ 
       {/* 通知组件 - 居中显示，优雅设计，最高层级 */}
       {notification && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center animate-in fade-in duration-300 px-4">
@@ -683,13 +574,13 @@ const PayPage = () => {
               : 'bg-white'
           } rounded-2xl shadow-2xl border-2 ${
             notification.type === 'success' 
-              ? 'border-[#00A3FF]/20' 
+              ? 'border-[#0095ff]/20' 
               : 'border-red-200'
           } overflow-hidden animate-in zoom-in duration-300`}>
             {/* 顶部装饰条 */}
             <div className={`h-2 ${
               notification.type === 'success' 
-                ? 'bg-gradient-to-r from-[#00A3FF] to-[#0086D1]' 
+                ? 'bg-gradient-to-r from-[#0095ff] to-[#007ad6]' 
                 : 'bg-gradient-to-r from-red-500 to-red-600'
             }`}></div>
             
@@ -697,7 +588,7 @@ const PayPage = () => {
               <div className="flex items-start gap-4">
                 {notification.type === 'success' ? (
                   <div className="flex-shrink-0 w-14 h-14 bg-gradient-to-br from-[#E0F2FE] to-[#BAE6FD] rounded-2xl flex items-center justify-center shadow-lg">
-                    <CheckCircle className="text-[#00A3FF]" size={32} strokeWidth={2.5} />
+                    <CheckCircle className="text-[#0095ff]" size={32} strokeWidth={2.5} />
                   </div>
                 ) : (
                   <div className="flex-shrink-0 w-14 h-14 bg-gradient-to-br from-red-50 to-red-100 rounded-2xl flex items-center justify-center shadow-lg">
@@ -721,7 +612,7 @@ const PayPage = () => {
                   onClick={() => setNotification(null)}
                   className={`px-8 py-3 rounded-xl font-bold transition-all shadow-lg ${
                     notification.type === 'success'
-                      ? 'bg-gradient-to-r from-[#00A3FF] to-[#0086D1] hover:from-[#0086D1] hover:to-[#006BA8] text-white'
+                      ? 'bg-gradient-to-r from-[#0095ff] to-[#007ad6] hover:from-[#007ad6] hover:to-[#006BA8] text-white'
                       : 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white'
                   }`}
                 >
@@ -744,14 +635,18 @@ const PayPage = () => {
         }
       `}</style>
 
-      <div className="max-w-5xl mx-auto px-6 space-y-6">
+      <div className="max-w-5xl mx-auto px-4 space-y-4">
+        <div className="text-center mb-1">
+          <h1 className="text-2xl font-black text-slate-900 mb-1">{payType} 代付</h1>
+          <p className="text-sm text-slate-600">输入地址与数量，自动完成链上转账</p>
+        </div>
         {/* 工作台顶部 - 一句话广告 */}
         {getAdsByPosition('workspace-top').length > 0 && (
           <div className="space-y-3">
             {getAdsByPosition('workspace-top').map((ad) => (
               <div 
                 key={ad._id}
-                className="rounded-xl border px-6 py-3"
+                className="rounded-xl border px-4 py-2"
                 style={{ 
                   backgroundColor: ad.backgroundColor || '#E0F2FE',
                   borderColor: `${ad.backgroundColor || '#E0F2FE'}40`
@@ -765,7 +660,7 @@ const PayPage = () => {
                       rel="noopener noreferrer"
                       className="text-sm transition-opacity hover:opacity-80"
                       style={{ 
-                        color: ad.textColor || '#00A3FF',
+                        color: ad.textColor || '#0095ff',
                         fontWeight: ad.isBold ? 'bold' : 'normal'
                       }}
                     >
@@ -775,7 +670,7 @@ const PayPage = () => {
                     <p 
                       className="text-sm"
                       style={{ 
-                        color: ad.textColor || '#00A3FF',
+                        color: ad.textColor || '#0095ff',
                         fontWeight: ad.isBold ? 'bold' : 'normal'
                       }}
                     >
@@ -789,27 +684,22 @@ const PayPage = () => {
         )}
 
         {/* 核心操作卡片 */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
-            <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
-              <div className="w-1 h-5 bg-gradient-to-b from-cyan-500 to-blue-600 rounded-full"></div>
-              <USDTIcon className="w-5 h-5" />
-              <span className="tracking-tight">USDT 代付工作台</span>
+        <div className="bg-white rounded-xl border border-slate-200 shadow-lg overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-slate-100 bg-slate-50">
+            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <CoinIcon className="w-4 h-4" />
+              <span>{payType} 代付工作台</span>
             </h3>
           </div>
 
-          <div className="p-6">
-            {/* 主要内容区 */}
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
-              {/* 左侧：输入表单 + 使用说明 */}
-              <div className="lg:col-span-5 space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                  {/* 表单区域 */}
-                  <div className="lg:col-span-3 space-y-5">
-                    {/* 收款地址 */}
+          <div className="p-4">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-start">
+              <div className="lg:col-span-5 space-y-4">
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+                  <div className="lg:col-span-3 space-y-3">
                     <div>
-                      <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
-                        <Wallet size={16} className="text-cyan-600" />
+                      <label className="flex items-center gap-1.5 text-xs font-bold text-slate-600 mb-1">
+                        <Wallet size={14} className="text-cyan-600" />
                         代付目标收款地址
                       </label>
                       <div className="relative">
@@ -818,22 +708,21 @@ const PayPage = () => {
                           placeholder="请输入 T 开头的波场地址"
                           value={address}
                           onChange={(e) => setAddress(e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-200 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100 focus:bg-white rounded-lg px-4 py-3 pr-12 text-sm outline-none transition-all font-mono placeholder:text-slate-400"
+                          className="w-full bg-slate-50 border border-slate-200 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-100 focus:bg-white rounded-lg px-3 py-2 pr-10 text-xs outline-none transition-all font-mono placeholder:text-slate-400"
                         />
                         <button
                           type="button"
                           onClick={startScanner}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-cyan-600 hover:bg-cyan-50 rounded-lg transition-all"
+                          className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 text-cyan-600 hover:bg-cyan-50 rounded-lg transition-all"
                           title="扫描二维码"
                         >
-                          <QrCode size={18} />
+                          <QrCode size={16} />
                         </button>
                       </div>
                     </div>
 
-                    {/* 支付数量 */}
                     <div>
-                      <label className="text-sm font-bold text-slate-700 mb-2 block">
+                      <label className="text-xs font-bold text-slate-600 mb-1 block">
                         支付数量
                       </label>
                       <div className="relative">
@@ -842,29 +731,29 @@ const PayPage = () => {
                           placeholder="请输入数量"
                           value={amount}
                           onChange={(e) => setAmount(e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-200 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100 focus:bg-white rounded-lg px-4 py-3 pr-24 text-base font-bold outline-none transition-all tabular-nums placeholder:text-slate-400 placeholder:text-sm placeholder:font-normal overflow-hidden text-ellipsis"
+                          className="w-full bg-slate-50 border border-slate-200 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-100 focus:bg-white rounded-lg px-3 py-2 pr-20 text-sm font-bold outline-none transition-all tabular-nums placeholder:text-slate-400 placeholder:text-xs placeholder:font-normal"
                         />
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                          <span className="text-sm font-black uppercase px-3 py-1.5 rounded-lg text-[#26A17B] bg-[#E6F4EF]">
-                            USDT
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                          <span className={`text-xs font-black uppercase px-2 py-0.5 rounded-lg ${isUSDT ? 'text-[#26A17B] bg-[#E6F4EF]' : 'text-[#FF060A] bg-[#FFE8E8]'}`}>
+                            {payType}
                           </span>
                         </div>
                       </div>
-                      <div className="flex justify-between items-center mt-2">
-                        <span className="text-xs text-cyan-600 font-bold bg-cyan-50 px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+                      <div className="flex justify-between items-center mt-1.5">
+                        <span className="text-xs text-cyan-600 font-bold bg-cyan-50 px-2 py-1 rounded-lg flex items-center gap-1.5">
                           <span className="text-[10px] font-black uppercase tracking-wider">实时汇率</span>
                           <span className="text-slate-400">|</span>
                           {currentRateDisplay}
                         </span>
                         {amount && (
-                          <span className="text-sm font-bold text-slate-500">
+                          <span className="text-xs font-bold text-slate-500">
                             约合 <span className="text-slate-900 font-black">¥ {calculateCNY()}</span>
                           </span>
                         )}
                       </div>
                       {/* 限额提示 */}
                       {amount && checkAmountLimit() && (
-                        <div className="mt-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                        <div className="mt-1.5 bg-red-50 border border-red-200 rounded-lg px-3 py-1.5">
                           <p className="text-xs text-red-600 font-bold">
                             ⚠️ {checkAmountLimit()}
                           </p>
@@ -872,9 +761,8 @@ const PayPage = () => {
                       )}
                     </div>
 
-                    {/* 通知邮箱 */}
                     <div>
-                      <label className="text-sm font-bold text-slate-700 mb-2 block">
+                      <label className="text-xs font-bold text-slate-600 mb-1 block">
                         通知邮箱 <span className="text-slate-400 font-normal">(可选)</span>
                       </label>
                       <input 
@@ -882,27 +770,26 @@ const PayPage = () => {
                         placeholder="订单完成后将发送通知邮件"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100 focus:bg-white rounded-lg px-4 py-3 text-sm outline-none transition-all placeholder:text-slate-400"
+                        className="w-full bg-slate-50 border border-slate-200 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-100 focus:bg-white rounded-lg px-3 py-2 text-sm outline-none transition-all placeholder:text-slate-400"
                       />
                     </div>
 
-                    {/* 支付方式选择 */}
                     <div>
-                      <h4 className="text-sm font-bold text-slate-700 mb-2">支付方式</h4>
+                      <h4 className="text-xs font-bold text-slate-600 mb-1.5">支付方式</h4>
                       <div className="grid grid-cols-2 gap-3">
                         <button
                           type="button"
                           onClick={() => setPaymentMethod('alipay')}
-                          className={`relative flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-bold transition-all ${
+                          className={`relative flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-bold transition-all ${
                             paymentMethod === 'alipay'
-                              ? 'bg-cyan-50 text-cyan-600 border-2 border-cyan-500 shadow-sm'
+                              ? 'bg-cyan-50 text-cyan-600 border border-cyan-500'
                               : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200'
                           } ${!settings.paymentAlipayEnabled ? 'opacity-60' : ''}`}
                         >
-                          <AlipayIcon />
+                          <AlipayIcon className="w-5 h-5" />
                           支付宝
                           {!settings.paymentAlipayEnabled && (
-                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-black">
+                            <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-black">
                               未开通
                             </span>
                           )}
@@ -910,16 +797,16 @@ const PayPage = () => {
                         <button
                           type="button"
                           onClick={() => setPaymentMethod('wechat')}
-                          className={`relative flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-bold transition-all ${
+                          className={`relative flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-bold transition-all ${
                             paymentMethod === 'wechat'
-                              ? 'bg-cyan-50 text-cyan-600 border-2 border-cyan-500 shadow-sm'
+                              ? 'bg-cyan-50 text-cyan-600 border border-cyan-500'
                               : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200'
                           } ${settings.paymentWechatEnabled === false ? 'opacity-60' : ''}`}
                         >
-                          <WechatIcon />
+                          <WechatIcon className="w-5 h-5" />
                           微信
                           {settings.paymentWechatEnabled === false && (
-                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-black">
+                            <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-black">
                               未开通
                             </span>
                           )}
@@ -928,34 +815,33 @@ const PayPage = () => {
                     </div>
                   </div>
 
-                  {/* 订单详情 */}
                   <div className="lg:col-span-2">
-                    <div className="bg-gradient-to-br from-slate-50 to-white rounded-xl p-6 border border-slate-200 shadow-sm sticky top-24">
-                      <h4 className="text-lg font-black text-slate-900 mb-5">订单详情</h4>
+                    <div className="bg-gradient-to-r from-cyan-50 to-blue-50 rounded-lg p-4 border border-cyan-200 sticky top-16">
+                      <h4 className="text-sm font-bold text-slate-900 mb-3">订单详情</h4>
                       
-                      <div className="space-y-3 mb-6">
-                        <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-                          <span className="text-sm text-slate-600 font-medium">预计代支付</span>
+                      <div className="space-y-2 mb-4">
+                        <div className="flex justify-between items-center pb-2 border-b border-cyan-100">
+                          <span className="text-xs text-slate-600">预计代支付</span>
                           <div className="flex items-center gap-1.5 min-w-0">
                             <span className="text-sm font-bold text-cyan-600 tabular-nums truncate">
                               {amount ? calculateReceiveAmount() : '--'}
                             </span>
-                            <span className="text-sm font-bold text-slate-500 flex-shrink-0">USDT</span>
+                            <span className="text-xs font-bold text-slate-500 flex-shrink-0">{payType}</span>
                           </div>
                         </div>
 
-                        <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-                          <span className="text-sm text-slate-600 font-medium">汇率结算</span>
+                        <div className="flex justify-between items-center pb-2 border-b border-cyan-100">
+                          <span className="text-xs text-slate-600">汇率结算</span>
                           <span className="text-sm font-bold text-slate-700 tabular-nums truncate">
                             ¥ {amount ? calculateCNY() : '--'}
                           </span>
                         </div>
 
-                        <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-                          <span className="text-sm text-slate-600 font-medium">
+                        <div className="flex justify-between items-center pb-2 border-b border-cyan-100">
+                          <span className="text-xs text-slate-600">
                             服务费
                             {amount && getFeeTypeLabel() && (
-                              <span className="text-[#00A3FF] ml-1">{getFeeTypeLabel()}</span>
+                              <span className="text-[#0095ff] ml-1">{getFeeTypeLabel()}</span>
                             )}
                           </span>
                           <span className="text-sm font-bold text-orange-500 tabular-nums truncate">
@@ -963,9 +849,9 @@ const PayPage = () => {
                           </span>
                         </div>
 
-                        <div className="flex justify-between items-center pt-2">
-                          <span className="text-base font-bold text-slate-700">订单总额</span>
-                          <p className="text-3xl font-black text-slate-900 tabular-nums truncate">
+                        <div className="flex justify-between items-center pt-1">
+                          <span className="text-sm font-bold text-slate-700">订单总额</span>
+                          <p className="text-xl font-black text-slate-900 tabular-nums truncate">
                             {amount ? `¥ ${calculateTotal()}` : '¥ --'}
                           </p>
                         </div>
@@ -974,13 +860,13 @@ const PayPage = () => {
                       <button 
                         onClick={handleSubmit}
                         disabled={!amount || !address || paymentLoading || checkAmountLimit()}
-                        className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white py-4 rounded-xl font-black text-base hover:shadow-xl hover:shadow-cyan-200 disabled:from-slate-400 disabled:to-slate-400 disabled:cursor-not-allowed transition-all uppercase tracking-wider flex items-center justify-center gap-2 group"
+                        className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white py-2.5 rounded-lg font-bold text-sm hover:shadow-md disabled:from-slate-400 disabled:to-slate-400 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 group"
                       >
                         {paymentLoading ? '创建订单中...' : '立即支付'}
-                        {!paymentLoading && <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />}
+                        {!paymentLoading && <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />}
                       </button>
 
-                      <p className="text-xs text-center font-bold text-slate-400 flex items-center justify-center gap-2 mt-4">
+                      <p className="text-xs text-center font-bold text-slate-400 flex items-center justify-center gap-1.5 mt-2.5">
                         <ShieldCheck size={14} className="text-green-500" />
                         On-chain verified & Secure 7x24
                       </p>
@@ -988,56 +874,29 @@ const PayPage = () => {
                   </div>
                 </div>
 
-                {/* 使用说明 - 横跨整行 */}
-                <div className="pt-6 border-t border-slate-200">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* 左侧：使用方法 */}
-                    <div className="bg-blue-50/50 rounded-xl p-5">
-                      <h4 className="text-sm font-black text-slate-900 mb-3">使用方法</h4>
-                      <div className="space-y-2 text-sm text-slate-600">
-                        <div className="flex items-start gap-3">
-                          <span className="flex-shrink-0 w-5 h-5 bg-[#00A3FF] text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
-                          <span className="pt-0.5">输入收款地址和代付数量</span>
-                        </div>
-                        <div className="flex items-start gap-3">
-                          <span className="flex-shrink-0 w-5 h-5 bg-[#00A3FF] text-white rounded-full flex items-center justify-center text-xs font-bold">2</span>
-                          <span className="pt-0.5">点击"立即支付"按钮提交订单</span>
-                        </div>
-                        <div className="flex items-start gap-3">
-                          <span className="flex-shrink-0 w-5 h-5 bg-[#00A3FF] text-white rounded-full flex items-center justify-center text-xs font-bold">3</span>
-                          <span className="pt-0.5">完成支付后，USDT 将在 2-10 分钟内自动转账到指定地址</span>
-                        </div>
-                        <div className="flex items-start gap-3">
-                          <span className="flex-shrink-0 w-5 h-5 bg-[#00A3FF] text-white rounded-full flex items-center justify-center text-xs font-bold">4</span>
-                          <span className="pt-0.5">可在下方"历史订单"中查看交易状态和哈希值</span>
-                        </div>
-                      </div>
+                <div className="pt-3 border-t border-slate-200">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <h4 className="text-xs font-bold text-blue-800 mb-1.5">使用方法</h4>
+                      <ol className="text-xs text-blue-700 space-y-1 ml-3 list-decimal">
+                        <li>输入收款地址和代付数量</li>
+                        <li>点击「立即支付」提交订单</li>
+                        <li>{`完成支付后，${payType} 将在 2-10 分钟内自动转账`}</li>
+                        <li>可在下方「历史订单」查看状态和哈希</li>
+                      </ol>
                     </div>
 
-                    {/* 右侧：安全提示 */}
-                    <div className="bg-green-50/50 rounded-xl p-5">
-                      <h4 className="text-sm font-black text-slate-900 mb-3 flex items-center gap-2">
-                        <ShieldCheck size={16} className="text-green-600" />
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                      <h4 className="text-xs font-bold text-yellow-800 mb-1.5 flex items-center gap-1.5">
+                        <ShieldCheck size={14} className="text-yellow-700" />
                         安全提示
                       </h4>
-                      <div className="space-y-2 text-sm text-slate-600">
-                        <p className="flex items-start gap-2">
-                          <span className="text-green-600 mt-0.5">•</span>
-                          <span>请仔细核对收款地址，转账后无法撤销</span>
-                        </p>
-                        <p className="flex items-start gap-2">
-                          <span className="text-green-600 mt-0.5">•</span>
-                          <span>建议先小额测试，确认无误后再大额转账</span>
-                        </p>
-                        <p className="flex items-start gap-2">
-                          <span className="text-green-600 mt-0.5">•</span>
-                          <span>所有交易均在链上可查，保障资金安全</span>
-                        </p>
-                        <p className="flex items-start gap-2">
-                          <span className="text-green-600 mt-0.5">•</span>
-                          <span>如遇问题请联系客服</span>
-                        </p>
-                      </div>
+                      <ul className="text-xs text-yellow-700 space-y-0.5 ml-3 list-disc">
+                        <li>请仔细核对收款地址，转账后无法撤销</li>
+                        <li>建议先小额测试，确认无误后再大额转账</li>
+                        <li>所有交易均在链上可查，保障资金安全</li>
+                        <li>如遇问题请联系客服</li>
+                      </ul>
                     </div>
                   </div>
                 </div>
@@ -1048,7 +907,7 @@ const PayPage = () => {
 
         {/* 工作台中部 - 3x3 广告位 */}
         {getAdsByPosition('workspace-middle').length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {getAdsByPosition('workspace-middle').slice(0, 9).map((ad) => (
               <div 
                 key={ad._id} 
@@ -1095,10 +954,10 @@ const PayPage = () => {
         )}
 
         {/* 历史订单列表 */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
-            <h4 className="text-sm font-black text-slate-900 flex items-center gap-2.5">
-              <History size={18} className="text-[#00A3FF]" />
+        <div className="bg-white rounded-xl border border-slate-200 shadow-lg overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-slate-200 bg-slate-50">
+            <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <History size={16} className="text-[#0095ff]" />
               历史订单
             </h4>
           </div>
@@ -1115,23 +974,23 @@ const PayPage = () => {
                 <col style={{ width: '200px' }} />
               </colgroup>
               <thead className="bg-slate-50 border-b border-slate-200">
-                <tr className="text-xs font-bold text-slate-600">
-                  <th className="px-4 py-3 text-left">订单号</th>
-                  <th className="px-4 py-3 text-left">代付类型</th>
-                  <th className="px-4 py-3 text-right">数量</th>
-                  <th className="px-4 py-3 text-left">支付方式</th>
-                  <th className="px-4 py-3 text-left">地址</th>
-                  <th className="px-4 py-3 text-left">交易哈希</th>
-                  <th className="px-4 py-3 text-left">创建时间</th>
+                <tr className="text-[11px] font-bold text-slate-600">
+                  <th className="px-3 py-1.5 text-left">订单号</th>
+                  <th className="px-3 py-1.5 text-left">代付类型</th>
+                  <th className="px-3 py-1.5 text-right">数量</th>
+                  <th className="px-3 py-1.5 text-left">支付方式</th>
+                  <th className="px-3 py-1.5 text-left">地址</th>
+                  <th className="px-3 py-1.5 text-left">交易哈希</th>
+                  <th className="px-3 py-1.5 text-left">创建时间</th>
                 </tr>
               </thead>
             </table>
             
-            <div className="relative" style={{ height: '552px', overflow: 'hidden' }}>
+            <div className="relative" style={{ height: '400px', overflow: 'hidden' }}>
               <div 
                 className="transition-transform duration-1000 ease-in-out"
                 style={{ 
-                  transform: `translateY(-${scrollOffset * 48}px)` 
+                  transform: `translateY(-${scrollOffset * 40}px)` 
                 }}
               >
                 <table className="w-full table-fixed">
@@ -1154,14 +1013,14 @@ const PayPage = () => {
                       
                       return loopData.length === 0 ? (
                         <tr>
-                          <td colSpan="7" className="px-4 py-8 text-center text-slate-500">
+                          <td colSpan="7" className="px-3 py-6 text-center text-xs text-slate-500">
                             暂无订单记录
                           </td>
                         </tr>
                       ) : (
                         loopData.map((payment, index) => (
-                          <tr key={`${payment._id}-${index}`} className="hover:bg-slate-50 transition-colors border-b border-slate-100" style={{ height: '48px' }}>
-                            <td className="px-4 py-3 text-sm font-mono text-slate-900 truncate">
+                          <tr key={`${payment._id}-${index}`} className="hover:bg-slate-50 transition-colors border-b border-slate-100" style={{ height: '40px' }}>
+                            <td className="px-3 py-1 text-xs font-mono text-slate-900 truncate">
                               {payment.platformOrderId 
                                 ? `${payment.platformOrderId.slice(0, 6)}****${payment.platformOrderId.slice(-4)}`
                                 : payment._id 
@@ -1169,34 +1028,34 @@ const PayPage = () => {
                                   : '-'
                               }
                             </td>
-                            <td className="px-4 py-3 text-sm text-slate-900">
+                            <td className="px-3 py-1 text-xs text-slate-900">
                               {payment.payType}
                             </td>
-                            <td className="px-4 py-3 text-sm font-bold text-right text-[#00A3FF]">
+                            <td className="px-3 py-1 text-xs font-bold text-right text-[#0095ff]">
                               {payment.amount}
                             </td>
-                            <td className="px-4 py-3 text-sm text-slate-900">
+                            <td className="px-3 py-1 text-xs text-slate-900">
                               {payment.paymentMethod === 'alipay' ? '支付宝' : '微信'}
                             </td>
-                            <td className="px-4 py-3 text-sm font-mono text-slate-900 truncate">
+                            <td className="px-3 py-1 text-xs font-mono text-slate-900 truncate">
                               {payment.address.slice(0, 6)}****{payment.address.slice(-4)}
                             </td>
-                            <td className="px-4 py-3 truncate">
+                            <td className="px-3 py-1 truncate">
                               {payment.txHash ? (
                                 <a 
                                   href={`https://tronscan.org/#/transaction/${payment.txHash}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-sm font-mono text-[#00A3FF] hover:text-[#0086D1] transition-colors inline-flex items-center gap-1"
+                                  className="text-xs font-mono text-[#0095ff] hover:text-[#007ad6] transition-colors inline-flex items-center gap-1"
                                 >
                                   {payment.txHash.slice(0, 6)}****{payment.txHash.slice(-4)}
-                                  <ExternalLink size={12} />
+                                  <ExternalLink size={11} />
                                 </a>
                               ) : (
-                                <span className="text-sm text-slate-400">-</span>
+                                <span className="text-xs text-slate-400">-</span>
                               )}
                             </td>
-                            <td className="px-4 py-3 text-sm text-slate-900">
+                            <td className="px-3 py-1 text-xs text-slate-900">
                               {new Date(payment.createdAt).toLocaleString('zh-CN', { 
                                 year: 'numeric',
                                 month: '2-digit', 
@@ -1219,7 +1078,7 @@ const PayPage = () => {
 
         {/* 工作台底部 - 3x3 广告位 */}
         {getAdsByPosition('workspace-bottom').length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {getAdsByPosition('workspace-bottom').slice(0, 9).map((ad) => (
               <div 
                 key={ad._id} 
@@ -1270,7 +1129,7 @@ const PayPage = () => {
       {showPayment && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full animate-in fade-in zoom-in duration-300">
-            <div className="bg-gradient-to-r from-[#00A3FF] to-[#0086D1] px-6 py-4 rounded-t-2xl">
+            <div className="bg-gradient-to-r from-[#0095ff] to-[#007ad6] px-6 py-4 rounded-t-2xl">
               <h3 className="text-xl font-black text-white text-center">扫码支付</h3>
             </div>
             
@@ -1282,7 +1141,7 @@ const PayPage = () => {
                 </div>
                 <div className="flex justify-between items-center mb-4">
                   <span className="text-sm font-bold text-slate-600">支付方式</span>
-                  <span className="text-sm font-bold text-[#00A3FF]">
+                  <span className="text-sm font-bold text-[#0095ff]">
                     {paymentMethod === 'alipay' ? '支付宝' : '微信支付'}
                   </span>
                 </div>
@@ -1309,7 +1168,7 @@ const PayPage = () => {
                 ) : (
                   <div className="bg-white border-4 border-slate-100 rounded-xl p-4">
                     <div className="w-48 h-48 flex flex-col items-center justify-center gap-3">
-                      <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#00A3FF] border-t-transparent"></div>
+                      <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#0095ff] border-t-transparent"></div>
                       <p className="text-sm text-slate-500">正在生成支付链接...</p>
                     </div>
                   </div>
@@ -1365,7 +1224,7 @@ const PayPage = () => {
                 onClick={() => switchScanMode('camera')}
                 className={`flex-1 py-2 px-4 rounded-lg font-bold text-sm transition-all ${
                   scanMode === 'camera'
-                    ? 'bg-[#00A3FF] text-white'
+                    ? 'bg-[#0095ff] text-white'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
@@ -1375,7 +1234,7 @@ const PayPage = () => {
                 onClick={() => switchScanMode('file')}
                 className={`flex-1 py-2 px-4 rounded-lg font-bold text-sm transition-all ${
                   scanMode === 'file'
-                    ? 'bg-[#00A3FF] text-white'
+                    ? 'bg-[#0095ff] text-white'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
@@ -1404,7 +1263,7 @@ const PayPage = () => {
                   />
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="bg-[#00A3FF] text-white px-6 py-3 rounded-lg font-bold hover:bg-[#0086D1] transition-all"
+                    className="bg-[#0095ff] text-white px-6 py-3 rounded-lg font-bold hover:bg-[#007ad6] transition-all"
                   >
                     选择二维码图片
                   </button>

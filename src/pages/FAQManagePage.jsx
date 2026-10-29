@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import { HelpCircle, Plus, Edit, Trash2, Eye, EyeOff, Save, X } from 'lucide-react';
-import axios from 'axios';
+import axios from '../api/client';
 import AdminLayout from '../components/AdminLayout';
 
 const FAQManagePage = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
   
   const [faqs, setFaqs] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -22,12 +20,8 @@ const FAQManagePage = () => {
   });
 
   useEffect(() => {
-    if (!user || user.role !== 'admin') {
-      navigate('/');
-      return;
-    }
     fetchFAQs();
-  }, [user, navigate]);
+  }, []);
 
   const fetchFAQs = async () => {
     setLoading(true);
@@ -128,8 +122,8 @@ const FAQManagePage = () => {
   return (
     <AdminLayout>
       <div className="max-w-6xl mx-auto">
-        <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">
-          <div className="flex items-center justify-between mb-6">
+        <div className="bg-white rounded-lg border border-slate-200 p-4 mb-4">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
                 <HelpCircle className="text-blue-600" size={20} />
@@ -141,7 +135,7 @@ const FAQManagePage = () => {
             </div>
             <button
               onClick={handleAdd}
-              className="px-4 py-2 bg-[#00A3FF] hover:bg-[#0086D1] text-white rounded-lg text-sm font-bold flex items-center gap-2 transition-all"
+              className="px-4 py-2 bg-[#0095ff] hover:bg-[#007ad6] text-white rounded-lg text-sm font-bold flex items-center gap-2 transition-all"
             >
               <Plus size={16} />
               添加FAQ
@@ -158,7 +152,7 @@ const FAQManagePage = () => {
               <p className="text-slate-500 mb-4">还没有FAQ</p>
               <button
                 onClick={handleAdd}
-                className="px-6 py-3 bg-[#00A3FF] hover:bg-[#0086D1] text-white rounded-lg font-bold transition-all"
+                className="px-6 py-3 bg-[#0095ff] hover:bg-[#007ad6] text-white rounded-lg font-bold transition-all"
               >
                 添加第一个FAQ
               </button>
@@ -237,7 +231,7 @@ const FAQManagePage = () => {
                 </button>
               </div>
 
-              <div className="p-6 space-y-4">
+              <div className="p-4 space-y-3">
                 <div>
                   <label className="text-sm font-bold text-slate-700 block mb-2">问题</label>
                   <input
@@ -245,7 +239,7 @@ const FAQManagePage = () => {
                     value={formData.question}
                     onChange={(e) => setFormData({ ...formData, question: e.target.value })}
                     placeholder="输入问题"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-[#00A3FF] outline-none"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-[#0095ff] outline-none"
                   />
                 </div>
 
@@ -258,7 +252,7 @@ const FAQManagePage = () => {
                     onChange={(e) => setFormData({ ...formData, answer: e.target.value })}
                     placeholder="输入答案，支持HTML标签如 <a href='链接'>文字</a> 或 <img src='图片链接' />"
                     rows={8}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-[#00A3FF] outline-none font-mono"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-[#0095ff] outline-none font-mono"
                   />
                   <p className="text-xs text-slate-500 mt-1">
                     示例：文字 &lt;a href="https://example.com" target="_blank"&gt;链接&lt;/a&gt; &lt;img src="图片URL" alt="图片" /&gt;
@@ -273,7 +267,7 @@ const FAQManagePage = () => {
                       value={formData.category}
                       onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                       placeholder="常见问题"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-[#00A3FF] outline-none"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-[#0095ff] outline-none"
                     />
                   </div>
 
@@ -283,7 +277,7 @@ const FAQManagePage = () => {
                       type="number"
                       value={formData.order}
                       onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) || 0 })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-[#00A3FF] outline-none"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-[#0095ff] outline-none"
                     />
                   </div>
                 </div>
@@ -293,7 +287,7 @@ const FAQManagePage = () => {
                   <button
                     onClick={() => setFormData({ ...formData, enabled: !formData.enabled })}
                     className={`relative w-14 h-8 rounded-full transition-colors ${
-                      formData.enabled ? 'bg-[#00A3FF]' : 'bg-slate-300'
+                      formData.enabled ? 'bg-[#0095ff]' : 'bg-slate-300'
                     }`}
                   >
                     <div className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full transition-transform ${
@@ -313,7 +307,7 @@ const FAQManagePage = () => {
                 <button
                   onClick={handleSave}
                   disabled={loading}
-                  className="flex-1 px-4 py-3 bg-[#00A3FF] hover:bg-[#0086D1] text-white rounded-lg font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                  className="flex-1 px-4 py-3 bg-[#0095ff] hover:bg-[#007ad6] text-white rounded-lg font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
                 >
                   <Save size={18} />
                   {loading ? '保存中...' : '保存'}

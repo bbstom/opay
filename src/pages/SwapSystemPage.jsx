@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { Save, RefreshCw, Eye, EyeOff, ArrowLeft, Trash2 } from 'lucide-react';
-import axios from 'axios';
+import axios from '../api/client';
 import AdminLayout from '../components/AdminLayout';
 
 const SwapSystemPage = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const location = useLocation();
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -30,14 +29,10 @@ const SwapSystemPage = () => {
   const [showSwapPrivateKey, setShowSwapPrivateKey] = useState(false);
 
   useEffect(() => {
-    if (!user || user.role !== 'admin') {
-      navigate('/');
-      return;
-    }
     fetchSettings();
     fetchRateInfo();
     loadSwapWallets();
-  }, [user, navigate]);
+  }, []);
 
   useEffect(() => {
     if (settings?.swapRateMode === 'realtime') {
@@ -176,21 +171,21 @@ const SwapSystemPage = () => {
   };
 
   if (!user || user.role !== 'admin') return null;
-  if (!settings) return <div className="pt-32 text-center">加载中...</div>;
+  if (!settings) return <div className="py-12 text-center text-sm text-slate-500">加载中...</div>;
 
   return (
     <AdminLayout>
-      <div className="flex justify-end mb-6">
+      <div className="flex justify-end mb-4">
         <button 
           onClick={handleSave}
           disabled={loading}
-          className="bg-green-500 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-green-600 transition-all disabled:opacity-50"
+          className="bg-green-500 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-green-600 transition-all disabled:opacity-50"
         >
           <Save size={20} /> {loading ? '保存中...' : '保存设置'}
         </button>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 p-8">
+      <div className="bg-white rounded-lg border border-slate-200 p-4">
         {/* 闪兑钱包管理 */}
         {activeTab === 'swap-wallets' && (
           <div className="space-y-6">
@@ -395,7 +390,7 @@ const SwapSystemPage = () => {
                         value={newSwapWallet.name}
                         onChange={(e) => setNewSwapWallet({ ...newSwapWallet, name: e.target.value })}
                         placeholder="例如: 闪兑钱包1"
-                        className="w-full bg-white border border-slate-200 rounded-lg px-4 py-3 focus:ring-2 focus:ring-[#00A3FF] outline-none"
+                        className="w-full bg-white border border-slate-200 rounded-lg px-4 py-3 focus:ring-2 focus:ring-[#0095ff] outline-none"
                       />
                     </div>
 
@@ -407,7 +402,7 @@ const SwapSystemPage = () => {
                           value={newSwapWallet.privateKey}
                           onChange={(e) => setNewSwapWallet({ ...newSwapWallet, privateKey: e.target.value })}
                           placeholder="输入钱包私钥"
-                          className="w-full bg-white border border-slate-200 rounded-lg px-4 py-3 pr-12 font-mono text-sm focus:ring-2 focus:ring-[#00A3FF] outline-none"
+                          className="w-full bg-white border border-slate-200 rounded-lg px-4 py-3 pr-12 font-mono text-sm focus:ring-2 focus:ring-[#0095ff] outline-none"
                         />
                         <button
                           type="button"
@@ -427,7 +422,7 @@ const SwapSystemPage = () => {
                         max="100"
                         value={newSwapWallet.priority}
                         onChange={(e) => setNewSwapWallet({ ...newSwapWallet, priority: parseInt(e.target.value) })}
-                        className="w-full bg-white border border-slate-200 rounded-lg px-4 py-3 focus:ring-2 focus:ring-[#00A3FF] outline-none"
+                        className="w-full bg-white border border-slate-200 rounded-lg px-4 py-3 focus:ring-2 focus:ring-[#0095ff] outline-none"
                       />
                       <p className="text-xs text-slate-500 mt-1">数值越大优先级越高</p>
                     </div>
@@ -436,7 +431,7 @@ const SwapSystemPage = () => {
                       <button
                         onClick={handleAddSwapWallet}
                         disabled={loading}
-                        className="flex-1 bg-[#00A3FF] hover:bg-[#0086D1] text-white px-6 py-3 rounded-lg font-bold disabled:opacity-50"
+                        className="flex-1 bg-[#0095ff] hover:bg-[#007ad6] text-white px-6 py-3 rounded-lg font-bold disabled:opacity-50"
                       >
                         {loading ? '添加中...' : '添加钱包'}
                       </button>
@@ -547,7 +542,7 @@ const SwapSystemPage = () => {
               <select
                 value={settings.swapRateMode}
                 onChange={(e) => setSettings({ ...settings, swapRateMode: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#00A3FF] outline-none"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#0095ff] outline-none"
               >
                 <option value="realtime">实时汇率（推荐 - 从Binance获取）</option>
                 <option value="manual">手动设置</option>
@@ -564,7 +559,7 @@ const SwapSystemPage = () => {
                   step="0.000001"
                   value={settings.swapRateUSDTtoTRX}
                   onChange={(e) => setSettings({ ...settings, swapRateUSDTtoTRX: parseFloat(e.target.value) })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#00A3FF] outline-none"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#0095ff] outline-none"
                   placeholder="例如: 6.7"
                 />
                 <p className="text-xs text-slate-500 mt-2">
@@ -637,7 +632,7 @@ const SwapSystemPage = () => {
                 step="0.1"
                 value={settings.swapRateMarkup}
                 onChange={(e) => setSettings({ ...settings, swapRateMarkup: parseFloat(e.target.value) })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#00A3FF] outline-none"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#0095ff] outline-none"
                 placeholder="例如: 2 表示用户换到的TRX减少2%"
               />
               <p className="text-xs text-slate-500 mt-2">
@@ -711,7 +706,7 @@ const SwapSystemPage = () => {
                   onChange={(e) => setSettings({ ...settings, swapEnabled: e.target.checked })}
                   className="sr-only peer"
                 />
-                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#00A3FF]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#00A3FF]"></div>
+                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#0095ff]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0095ff]"></div>
               </label>
             </div>
 
@@ -722,7 +717,7 @@ const SwapSystemPage = () => {
                   type="number"
                   value={settings.swapMinAmount}
                   onChange={(e) => setSettings({ ...settings, swapMinAmount: parseFloat(e.target.value) })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#00A3FF] outline-none"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#0095ff] outline-none"
                 />
               </div>
               <div>
@@ -731,7 +726,7 @@ const SwapSystemPage = () => {
                   type="number"
                   value={settings.swapMaxAmount}
                   onChange={(e) => setSettings({ ...settings, swapMaxAmount: parseFloat(e.target.value) })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#00A3FF] outline-none"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#0095ff] outline-none"
                 />
               </div>
             </div>
@@ -742,7 +737,7 @@ const SwapSystemPage = () => {
                 type="number"
                 value={settings.swapOrderTimeout}
                 onChange={(e) => setSettings({ ...settings, swapOrderTimeout: parseInt(e.target.value) })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#00A3FF] outline-none"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#0095ff] outline-none"
               />
               <p className="text-xs text-slate-500 mt-2">
                 用户需要在此时间内完成USDT转账，否则订单自动取消
@@ -754,7 +749,7 @@ const SwapSystemPage = () => {
               <textarea
                 value={settings.swapNotice || ''}
                 onChange={(e) => setSettings({ ...settings, swapNotice: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#00A3FF] outline-none"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#0095ff] outline-none"
                 rows="4"
                 placeholder="必须使用 TRC20 网络&#10;最小金额：10 USDT&#10;汇率实时变动"
               />

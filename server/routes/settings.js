@@ -1,9 +1,46 @@
 const express = require('express');
 const Settings = require('../models/Settings');
 const { auth, adminAuth } = require('../middleware/auth');
-const exchangeRateService = require('../services/exchangeRateService');
+const { redactSettings, mergeSettingSecrets } = require('../utils/secrets');
+const { fingerprintTelegramBots, getPrimaryTelegramBot } = require('../utils/telegramBots');
+const { getBotManager } = require('../bot/MultiBotManager');
 
 const router = express.Router();
+
+const redactSwapWallets = (settings) => {
+  const obj = settings.toObject ? settings.toObject() : { ...settings };
+  try {
+    const wallets = JSON.parse(obj.swapWallets || '[]');
+    obj.swapWallets = JSON.stringify(
+      wallets.map(({ privateKeyEncrypted, ...rest }) => ({
+        ...rest,
+        hasPrivateKey: !!privateKeyEncrypted
+      }))
+    );
+  } catch (_) {}
+  return obj;
+};
+
+const mergeSwapWalletSecrets = (existing, incoming) => {
+  if (!incoming.swapWallets) return incoming;
+  try {
+    const oldWallets = JSON.parse(existing.swapWallets || '[]');
+    const newWallets = typeof incoming.swapWallets === 'string'
+      ? JSON.parse(incoming.swapWallets)
+      : incoming.swapWallets;
+    const byId = Object.fromEntries(oldWallets.map((w) => [String(w.id), w]));
+    incoming.swapWallets = JSON.stringify(
+      newWallets.map((w) => {
+        const { hasPrivateKey, ...rest } = w;
+        return {
+          ...rest,
+          privateKeyEncrypted: rest.privateKeyEncrypted || byId[String(w.id)]?.privateKeyEncrypted
+        };
+      })
+    );
+  } catch (_) {}
+  return incoming;
+};
 
 // 获取公开设置（不需要认证）
 router.get('/public', async (req, res) => {
@@ -29,6 +66,7 @@ router.get('/public', async (req, res) => {
       socialWeChat: settings.socialWeChat,
       socialEmail: settings.socialEmail,
       telegramCustomerService: settings.telegramCustomerService, // TG客服地址
+      telegramBotUsername: (getPrimaryTelegramBot(settings) || {}).username || '',
       energyRentalAddress: settings.energyRentalAddress, // 能量租赁收款地址
       energyPriceTrx: settings.energyPriceTrx, // 能量价格 - TRX数量
       energyPriceEnergy: settings.energyPriceEnergy, // 能量价格 - 能量数量
@@ -60,10 +98,16 @@ router.get('/public', async (req, res) => {
       exchangeRateMarkup: settings.exchangeRateMarkup,
       paymentAlipayEnabled: settings.paymentAlipayEnabled,
       paymentWechatEnabled: settings.paymentWechatEnabled,
-      swapWallets: settings.swapWallets, // 添加闪兑钱包配置
       workspaceAlertEnabled: settings.workspaceAlertEnabled, // 工作台警告弹窗开关
       workspaceAlertTitle: settings.workspaceAlertTitle, // 工作台警告弹窗标题
-      workspaceAlertContent: settings.workspaceAlertContent // 工作台警告弹窗内容
+      workspaceAlertContent: settings.workspaceAlertContent, // 工作台警告弹窗内容
+      rewardEnabled: settings.rewardEnabled !== false,
+      checkinEnabled: settings.checkinEnabled !== false,
+      checkinTrx: settings.checkinTrx,
+      inviteSignupTrx: settings.inviteSignupTrx,
+      consumeRewardUsdtPercent: settings.consumeRewardUsdtPercent,
+      withdrawMinUsdt: settings.withdrawMinUsdt,
+      withdrawFeeUsdt: settings.withdrawFeeUsdt
     });
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -78,7 +122,7 @@ router.get('/', auth, adminAuth, async (req, res) => {
       settings = new Settings();
       await settings.save();
     }
-    res.json(settings);
+    res.json(redactSettings(redactSwapWallets(settings)));
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -92,11 +136,19 @@ router.put('/', auth, adminAuth, async (req, res) => {
       settings = new Settings();
     }
     
-    Object.assign(settings, req.body);
+    const prevTelegramFp = fingerprintTelegramBots(settings.telegramBots);
+    Object.assign(settings, mergeSwapWalletSecrets(settings, mergeSettingSecrets(settings, { ...req.body })));
     settings.updatedAt = Date.now();
     await settings.save();
-    
-    res.json(settings);
+
+    if (
+      Object.prototype.hasOwnProperty.call(req.body, 'telegramBots') &&
+      fingerprintTelegramBots(settings.telegramBots) !== prevTelegramFp
+    ) {
+      getBotManager().reloadFromDb().catch((err) => console.error('❌ 按新配置重启 Bot 失败:', err));
+    }
+
+    res.json(redactSettings(redactSwapWallets(settings)));
   } catch (error) {
     res.status(400).json({ error: error.message });
   }

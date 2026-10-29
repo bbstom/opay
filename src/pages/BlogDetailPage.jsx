@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Calendar, Eye, Tag, ArrowLeft, Share2 } from 'lucide-react';
-import axios from 'axios';
+import axios from '../api/client';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -82,7 +82,7 @@ const BlogDetailPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white pt-24">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white pt-16">
       <SEOHead
         title={`${blog.seo?.title || blog.title} - 可可代付博客`}
         description={blog.seo?.description || blog.excerpt}
@@ -105,11 +105,11 @@ const BlogDetailPage = () => {
 
       {/* 文章头部 */}
       <article className="py-8">
-        <div className="max-w-4xl mx-auto px-6">
+        <div className="max-w-4xl mx-auto px-4">
           {/* 返回按钮 */}
           <button
             onClick={() => navigate('/blog')}
-            className="flex items-center gap-2 text-slate-600 hover:text-blue-600 transition-colors mb-8 group"
+            className="flex items-center gap-2 text-slate-600 hover:text-blue-600 transition-colors mb-4 group"
           >
             <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
             <span className="font-medium">返回博客列表</span>
@@ -132,12 +132,12 @@ const BlogDetailPage = () => {
           </div>
 
           {/* 标题 */}
-          <h1 className="text-4xl lg:text-5xl font-black text-slate-900 mb-6 leading-tight">
+          <h1 className="text-2xl font-black text-slate-900 mb-3 leading-tight">
             {blog.title}
           </h1>
 
           {/* 元信息 */}
-          <div className="flex flex-wrap items-center gap-6 text-slate-600 mb-8 pb-8 border-b border-slate-200">
+          <div className="flex flex-wrap items-center gap-4 text-slate-600 mb-4 pb-4 border-b border-slate-200">
             <div className="flex items-center gap-2">
               <Calendar size={18} />
               <span>{new Date(blog.publishedAt).toLocaleDateString('zh-CN', {
@@ -165,7 +165,7 @@ const BlogDetailPage = () => {
           {/* 封面图 */}
           {blog.coverImage && (
             <div 
-              className="rounded-2xl overflow-hidden mb-12 bg-gradient-to-br from-blue-100 to-cyan-100"
+              className="rounded-lg overflow-hidden mb-6 bg-gradient-to-br from-blue-100 to-cyan-100"
               style={{ 
                 maxHeight: imageSettings.coverMaxHeight === 'none' ? 'none' : imageSettings.coverMaxHeight 
               }}
@@ -183,12 +183,12 @@ const BlogDetailPage = () => {
           )}
 
           {/* 文章内容 */}
-          <div className="prose prose-lg prose-slate max-w-none
+          <div className="prose prose-sm prose-slate max-w-none
             prose-headings:scroll-mt-24
-            prose-h2:text-3xl prose-h2:font-bold prose-h2:mt-12 prose-h2:mb-6 prose-h2:pb-3 prose-h2:border-b-2 prose-h2:border-slate-200
-            prose-h3:text-2xl prose-h3:font-bold prose-h3:mt-8 prose-h3:mb-4
-            prose-h4:text-xl prose-h4:font-semibold prose-h4:mt-6 prose-h4:mb-3
-            prose-p:text-base prose-p:leading-7 prose-p:my-4
+            prose-h2:text-xl prose-h2:font-bold prose-h2:mt-5 prose-h2:mb-3 prose-h2:pb-2 prose-h2:border-b prose-h2:border-slate-200
+            prose-h3:text-lg prose-h3:font-bold prose-h3:mt-4 prose-h3:mb-2
+            prose-h4:text-base prose-h4:font-semibold prose-h4:mt-4 prose-h4:mb-2
+            prose-p:text-sm prose-p:leading-6 prose-p:my-3
             prose-a:text-blue-600 prose-a:font-medium prose-a:no-underline hover:prose-a:underline hover:prose-a:text-blue-700
             prose-strong:font-bold prose-strong:text-slate-900
             prose-ul:my-6 prose-ul:space-y-2
@@ -196,12 +196,12 @@ const BlogDetailPage = () => {
             prose-li:text-slate-700 prose-li:leading-7
             prose-blockquote:border-l-4 prose-blockquote:border-blue-500 prose-blockquote:bg-blue-50 prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:my-6 prose-blockquote:italic
             prose-code:text-pink-600 prose-code:bg-pink-50 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:font-mono prose-code:text-sm prose-code:font-normal prose-code:before:content-none prose-code:after:content-none
-            prose-pre:bg-slate-900 prose-pre:text-slate-100 prose-pre:rounded-xl prose-pre:shadow-lg prose-pre:my-6
+            prose-pre:bg-slate-900 prose-pre:text-slate-100 prose-pre:rounded-lg prose-pre:shadow-lg prose-pre:my-6
             prose-table:my-8 prose-table:border-collapse prose-table:w-full
             prose-thead:bg-slate-100
             prose-th:border prose-th:border-slate-300 prose-th:px-4 prose-th:py-3 prose-th:text-left prose-th:font-bold prose-th:text-slate-900
             prose-td:border prose-td:border-slate-300 prose-td:px-4 prose-td:py-3 prose-td:text-slate-700
-            prose-img:rounded-xl prose-img:shadow-lg prose-img:my-8
+            prose-img:rounded-lg prose-img:shadow-lg prose-img:my-8
             prose-hr:my-12 prose-hr:border-slate-300
           ">
             <ReactMarkdown
@@ -280,7 +280,7 @@ const BlogDetailPage = () => {
           </div>
 
           {/* 文章底部 */}
-          <div className="mt-12 pt-8 border-t border-slate-200">
+          <div className="mt-6 pt-8 border-t border-slate-200">
             <div className="flex flex-wrap gap-2">
               <span className="text-slate-600 font-semibold">标签：</span>
               {blog.tags?.map((tag) => (
@@ -300,14 +300,14 @@ const BlogDetailPage = () => {
       {/* 相关文章 */}
       {relatedBlogs.length > 0 && (
         <section className="py-12 bg-slate-50">
-          <div className="max-w-4xl mx-auto px-6">
-            <h2 className="text-2xl font-black text-slate-900 mb-6">相关文章</h2>
+          <div className="max-w-4xl mx-auto px-4">
+            <h2 className="text-lg font-bold text-slate-900 mb-6">相关文章</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {relatedBlogs.map((relatedBlog) => (
                 <article
                   key={relatedBlog._id}
                   onClick={() => navigate(`/blog/${relatedBlog.slug}`)}
-                  className="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg transition-all cursor-pointer group"
+                  className="bg-white rounded-lg border border-slate-200 p-4 hover:shadow-lg transition-all cursor-pointer group"
                 >
                   <span className="px-3 py-1 bg-blue-50 text-blue-600 text-xs font-bold rounded-full inline-block mb-3">
                     {relatedBlog.category?.name}

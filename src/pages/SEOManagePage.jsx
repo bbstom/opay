@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { RefreshCw, FileText, Map, Bot, CheckCircle, XCircle, Clock, Download } from 'lucide-react';
+import axios, { getApiError } from '../api/client';
 import AdminLayout from '../components/AdminLayout';
 
 export default function SEOManagePage() {
@@ -11,13 +12,7 @@ export default function SEOManagePage() {
   // 获取状态
   const fetchStatus = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/seo/status', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
+      const { data } = await axios.get('/api/seo/status');
       if (data.success) {
         setStatus(data);
       }
@@ -35,15 +30,7 @@ export default function SEOManagePage() {
     setLoading(true);
     setMessage(null);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/seo/generate', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      const data = await response.json();
+      const { data } = await axios.post('/api/seo/generate');
       
       if (data.success) {
         setMessage({ type: 'success', text: '所有静态文件生成成功！' });
@@ -53,7 +40,7 @@ export default function SEOManagePage() {
       }
     } catch (error) {
       console.error('生成失败:', error);
-      setMessage({ type: 'error', text: '生成失败：' + error.message });
+      setMessage({ type: 'error', text: '生成失败：' + getApiError(error) });
     } finally {
       setLoading(false);
     }
@@ -64,15 +51,7 @@ export default function SEOManagePage() {
     setGenerating({ ...generating, [type]: true });
     setMessage(null);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/seo/generate/${type}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      const data = await response.json();
+      const { data } = await axios.post(`/api/seo/generate/${type}`);
       
       if (data.success) {
         setMessage({ type: 'success', text: `${type} 生成成功！` });
@@ -82,7 +61,7 @@ export default function SEOManagePage() {
       }
     } catch (error) {
       console.error('生成失败:', error);
-      setMessage({ type: 'error', text: '生成失败：' + error.message });
+      setMessage({ type: 'error', text: '生成失败：' + getApiError(error) });
     } finally {
       setGenerating({ ...generating, [type]: false });
     }
@@ -168,7 +147,7 @@ export default function SEOManagePage() {
         {/* 页面标题 */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">SEO 管理</h1>
+            <h1 className="text-xl font-bold text-slate-900">SEO 管理</h1>
             <p className="text-gray-600 mt-1">生成和管理静态页面、sitemap 和 robots.txt</p>
           </div>
           <button

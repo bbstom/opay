@@ -1,5 +1,6 @@
 const axios = require('axios');
 const Settings = require('../models/Settings');
+const { withJobLock, forceRelease } = require('../utils/jobLock');
 
 class ExchangeRateService {
   constructor() {
@@ -111,6 +112,7 @@ class ExchangeRateService {
       return;
     }
 
+    return withJobLock('exchange-rate', 5 * 60 * 1000, async () => {
     this.isUpdating = true;
 
     try {
@@ -160,12 +162,14 @@ class ExchangeRateService {
     } finally {
       this.isUpdating = false;
     }
+    });
   }
 
   // 手动触发更新（用于测试或管理员手动刷新）
   async forceUpdate() {
     console.log('🔄 手动触发汇率更新...');
-    this.isUpdating = false; // 重置锁
+    await forceRelease('exchange-rate');
+    this.isUpdating = false;
     await this.updateRates();
   }
 

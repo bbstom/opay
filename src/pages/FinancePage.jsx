@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import { DollarSign, TrendingUp, TrendingDown, Calendar, Download, Search, ChevronLeft, ChevronRight, RefreshCw, CheckCircle } from 'lucide-react';
-import axios from 'axios';
+import axios from '../api/client';
 import AdminLayout from '../components/AdminLayout';
 
 const FinancePage = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [payments, setPayments] = useState([]);
   const [stats, setStats] = useState({
     totalRevenue: 0,
@@ -29,13 +27,9 @@ const FinancePage = () => {
   const [retryingPayment, setRetryingPayment] = useState(null);
 
   useEffect(() => {
-    if (!user || user.role !== 'admin') {
-      navigate('/');
-      return;
-    }
     fetchPayments();
     fetchStats();
-  }, [user, navigate]);
+  }, []);
 
   const fetchPayments = async () => {
     setLoading(true);
@@ -127,8 +121,8 @@ const FinancePage = () => {
   return (
     <AdminLayout>
       {/* 统计卡片 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-xl border border-slate-200 p-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+        <div className="bg-white rounded-lg border border-slate-200 p-4">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center">
               <DollarSign className="text-blue-600" size={24} />
@@ -139,10 +133,10 @@ const FinancePage = () => {
             </span>
           </div>
           <p className="text-sm text-slate-500 font-medium mb-1">总收入</p>
-          <p className="text-2xl font-black text-slate-900">¥ {stats.totalRevenue.toLocaleString()}</p>
+          <p className="text-xl font-bold text-slate-900">¥ {stats.totalRevenue.toLocaleString()}</p>
         </div>
 
-        <div className="bg-white rounded-xl border border-slate-200 p-6">
+        <div className="bg-white rounded-lg border border-slate-200 p-4">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center">
               <TrendingUp className="text-green-600" size={24} />
@@ -153,10 +147,10 @@ const FinancePage = () => {
             </span>
           </div>
           <p className="text-sm text-slate-500 font-medium mb-1">今日收入</p>
-          <p className="text-2xl font-black text-slate-900">¥ {stats.todayRevenue.toLocaleString()}</p>
+          <p className="text-xl font-bold text-slate-900">¥ {stats.todayRevenue.toLocaleString()}</p>
         </div>
 
-        <div className="bg-white rounded-xl border border-slate-200 p-6">
+        <div className="bg-white rounded-lg border border-slate-200 p-4">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center">
               <Calendar className="text-purple-600" size={24} />
@@ -164,10 +158,10 @@ const FinancePage = () => {
             <span className="text-xs font-bold text-slate-400">总订单</span>
           </div>
           <p className="text-sm text-slate-500 font-medium mb-1">订单总数</p>
-          <p className="text-2xl font-black text-slate-900">{stats.totalOrders.toLocaleString()}</p>
+          <p className="text-xl font-bold text-slate-900">{stats.totalOrders.toLocaleString()}</p>
         </div>
 
-        <div className="bg-white rounded-xl border border-slate-200 p-6">
+        <div className="bg-white rounded-lg border border-slate-200 p-4">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-orange-50 rounded-xl flex items-center justify-center">
               <Calendar className="text-orange-600" size={24} />
@@ -175,19 +169,19 @@ const FinancePage = () => {
             <span className="text-xs font-bold text-green-600">{stats.successRate}%</span>
           </div>
           <p className="text-sm text-slate-500 font-medium mb-1">今日订单</p>
-          <p className="text-2xl font-black text-slate-900">{stats.todayOrders} 单</p>
+          <p className="text-xl font-bold text-slate-900">{stats.todayOrders} 单</p>
         </div>
       </div>
 
       {/* 筛选和导出 */}
-      <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">
+      <div className="bg-white rounded-lg border border-slate-200 p-4 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div>
             <label className="text-xs font-bold text-slate-600 block mb-2">状态</label>
             <select
               value={filter.status}
               onChange={(e) => setFilter({ ...filter, status: e.target.value })}
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#00A3FF] outline-none"
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#0095ff] outline-none"
             >
               <option value="all">全部</option>
               <option value="pending">待支付</option>
@@ -202,7 +196,7 @@ const FinancePage = () => {
             <select
               value={filter.payType}
               onChange={(e) => setFilter({ ...filter, payType: e.target.value })}
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#00A3FF] outline-none"
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#0095ff] outline-none"
             >
               <option value="all">全部</option>
               <option value="USDT">USDT</option>
@@ -216,7 +210,7 @@ const FinancePage = () => {
               type="date"
               value={filter.startDate}
               onChange={(e) => setFilter({ ...filter, startDate: e.target.value })}
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#00A3FF] outline-none"
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#0095ff] outline-none"
             />
           </div>
 
@@ -226,7 +220,7 @@ const FinancePage = () => {
               type="date"
               value={filter.endDate}
               onChange={(e) => setFilter({ ...filter, endDate: e.target.value })}
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#00A3FF] outline-none"
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#0095ff] outline-none"
             />
           </div>
 
@@ -238,7 +232,7 @@ const FinancePage = () => {
                 placeholder="订单号/地址"
                 value={filter.search}
                 onChange={(e) => setFilter({ ...filter, search: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-10 pr-3 py-2 text-sm focus:ring-2 focus:ring-[#00A3FF] outline-none"
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-10 pr-3 py-2 text-sm focus:ring-2 focus:ring-[#0095ff] outline-none"
               />
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
             </div>
@@ -248,7 +242,7 @@ const FinancePage = () => {
         <div className="flex justify-end mt-4">
           <button
             onClick={exportData}
-            className="bg-[#00A3FF] text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-[#0086D1] transition-all"
+            className="bg-[#0095ff] text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-[#007ad6] transition-all"
           >
             <Download size={16} />
             导出报表
@@ -369,7 +363,7 @@ const FinancePage = () => {
                           href={`https://tronscan.org/#/transaction/${payment.txHash}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs font-mono text-[#00A3FF] hover:text-[#0086D1]"
+                          className="text-xs font-mono text-[#0095ff] hover:text-[#007ad6]"
                         >
                           {payment.txHash.slice(0, 8)}...{payment.txHash.slice(-4)}
                         </a>
@@ -445,7 +439,7 @@ const FinancePage = () => {
                       onClick={() => setCurrentPage(page)}
                       className={`px-3 py-2 rounded-lg text-sm font-bold transition-all ${
                         currentPage === page
-                          ? 'bg-[#00A3FF] text-white'
+                          ? 'bg-[#0095ff] text-white'
                           : 'text-slate-600 hover:bg-slate-100'
                       }`}
                     >

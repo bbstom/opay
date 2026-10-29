@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { Plus, Edit, Trash2, Image as ImageIcon, Type } from 'lucide-react';
-import axios from 'axios';
+import axios from '../api/client';
 import AdminLayout from '../components/AdminLayout';
 
 const AdminPage = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const location = useLocation();
   const [ads, setAds] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -23,7 +22,7 @@ const AdminPage = () => {
     order: 0,
     isActive: true,
     backgroundColor: '#E0F2FE',
-    textColor: '#00A3FF',
+    textColor: '#0095ff',
     isBold: true
   });
 
@@ -32,12 +31,8 @@ const AdminPage = () => {
   const activePosition = searchParams.get('tab') || 'home-bottom';
 
   useEffect(() => {
-    if (!user || user.role !== 'admin') {
-      navigate('/');
-      return;
-    }
     fetchAds();
-  }, [user, navigate]);
+  }, []);
 
   const fetchAds = async () => {
     try {
@@ -91,7 +86,7 @@ const AdminPage = () => {
       order: ad.order || 0,
       isActive: ad.isActive !== undefined ? ad.isActive : true,
       backgroundColor: ad.backgroundColor || '#E0F2FE',
-      textColor: ad.textColor || '#00A3FF',
+      textColor: ad.textColor || '#0095ff',
       isBold: ad.isBold !== undefined ? ad.isBold : true
     });
     setShowModal(true);
@@ -112,12 +107,12 @@ const AdminPage = () => {
   return (
     <AdminLayout>
       <div className="mb-6">
-        <h1 className="text-2xl font-black text-slate-800 mb-2">广告管理 - {positionNames[activePosition]}</h1>
+        <h1 className="text-lg font-bold text-slate-800 mb-2">广告管理 - {positionNames[activePosition]}</h1>
         <p className="text-sm text-slate-500">管理 {positionNames[activePosition]} 的广告内容</p>
       </div>
 
       <div className="flex justify-between items-center mb-8">
-        <button onClick={() => { setShowModal(true); setEditingAd(null); setFormData({ title: '', type: 'text', content: '', imageUrl: '', link: '', height: 120, position: activePosition, order: 0, isActive: true, backgroundColor: '#E0F2FE', textColor: '#00A3FF', isBold: true }); }} className="bg-[#00A3FF] text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-[#0086D1] transition-all ml-auto">
+        <button onClick={() => { setShowModal(true); setEditingAd(null); setFormData({ title: '', type: 'text', content: '', imageUrl: '', link: '', height: 120, position: activePosition, order: 0, isActive: true, backgroundColor: '#E0F2FE', textColor: '#0095ff', isBold: true }); }} className="bg-[#0095ff] text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-[#007ad6] transition-all ml-auto">
           <Plus size={20} /> 新建广告
         </button>
       </div>
@@ -130,7 +125,7 @@ const AdminPage = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredAds.map(ad => (
-          <div key={ad._id} className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
+          <div key={ad._id} className="bg-white rounded-lg border border-slate-200 p-4 space-y-3">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-2">
                 {ad.type === 'text' ? <Type size={20} className="text-slate-400" /> : <ImageIcon size={20} className="text-slate-400" />}
@@ -163,8 +158,8 @@ const AdminPage = () => {
 
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-black text-slate-800 mb-6">{editingAd ? '编辑广告' : '新建广告'}</h2>
+          <div className="bg-white rounded-lg p-4 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <h2 className="text-lg font-bold text-slate-800 mb-4">{editingAd ? '编辑广告' : '新建广告'}</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-2">标题</label>
@@ -255,7 +250,7 @@ const AdminPage = () => {
                           value={formData.textColor} 
                           onChange={(e) => setFormData({ ...formData, textColor: e.target.value })} 
                           className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 focus:ring-2 focus:ring-cyan-500 outline-none font-mono text-sm"
-                          placeholder="#00A3FF"
+                          placeholder="#0095ff"
                         />
                       </div>
                     </div>

@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Clock, CheckCircle, XCircle, Loader, Filter, Search } from 'lucide-react';
+import { Clock, CheckCircle, XCircle, Loader, Filter, Search, Download } from 'lucide-react';
 import { USDTIcon, TRXIcon } from '../components/Icons';
-import axios from 'axios';
+import axios from '../api/client';
 import UserLayout from '../components/UserLayout';
 
 const MyOrdersPage = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);
@@ -16,12 +14,8 @@ const MyOrdersPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
     fetchOrders();
-  }, [user, navigate]);
+  }, []);
 
   useEffect(() => {
     filterOrders();
@@ -57,6 +51,30 @@ const MyOrdersPage = () => {
     setFilteredOrders(filtered);
   };
 
+  const exportData = () => {
+    const csv = [
+      ['订单号', '类型', '数量', '地址', '总额(CNY)', '服务费(CNY)', '支付方式', '状态', '交易哈希', '创建时间'],
+      ...filteredOrders.map((p) => [
+        p.platformOrderId || '',
+        p.payType,
+        p.amount,
+        p.address,
+        p.totalCNY || p.amount,
+        p.serviceFee || 0,
+        p.paymentMethod === 'alipay' ? '支付宝' : '微信',
+        p.status,
+        p.txHash || '',
+        new Date(p.createdAt).toLocaleString('zh-CN')
+      ])
+    ].map((row) => row.join(',')).join('\n');
+
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `我的订单_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+
   const getStatusBadge = (status) => {
     const statusMap = {
       pending: { text: '待支付', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
@@ -87,8 +105,8 @@ const MyOrdersPage = () => {
 
   return (
     <UserLayout>
-      <div className="max-w-6xl mx-auto">
-        <div className="bg-white rounded-xl shadow border border-slate-200 p-6 mb-6">
+      <div className="max-w-4xl mx-auto">
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 mb-4">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex items-center gap-2">
               <Filter size={16} className="text-slate-400" />
@@ -117,16 +135,24 @@ const MyOrdersPage = () => {
               />
             </div>
 
-            <div className="flex items-center gap-2 text-sm text-slate-600">
+            <div className="flex items-center gap-3 text-sm text-slate-600">
               <span className="font-bold">共 {filteredOrders.length} 条记录</span>
+              <button
+                type="button"
+                onClick={exportData}
+                className="bg-[#0095ff] text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-[#007ad6] transition-all"
+              >
+                <Download size={16} />
+                导出订单
+              </button>
             </div>
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           {filteredOrders.length > 0 ? (
             filteredOrders.map((order) => (
-              <div key={order._id} className="bg-white rounded-xl shadow border border-slate-200 p-6 hover:shadow-lg transition-all">
+              <div key={order._id} className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 hover:shadow-md transition-all">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
                     {order.payType === 'USDT' ? (
@@ -192,9 +218,9 @@ const MyOrdersPage = () => {
               </div>
             ))
           ) : (
-            <div className="bg-white rounded-xl shadow border border-slate-200 p-12 text-center">
-              <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 text-center">
+              <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
@@ -204,7 +230,7 @@ const MyOrdersPage = () => {
               {!searchQuery && filterStatus === 'all' && (
                 <button
                   onClick={() => navigate('/pay')}
-                  className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-lg font-bold hover:shadow-lg transition-all"
+                  className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-lg font-bold hover:shadow-lg transition-all"
                 >
                   立即下单
                 </button>

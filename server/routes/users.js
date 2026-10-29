@@ -1,19 +1,45 @@
 const express = require('express');
 const User = require('../models/User');
 const Payment = require('../models/Payment');
-const { auth } = require('../middleware/auth');
+const { auth, adminAuth } = require('../middleware/auth');
 
 const router = express.Router();
+router.use(auth, adminAuth);
+
+// 获取用户统计（管理员）
+router.get('/stats/overview', async (req, res) => {
+  try {
+    const totalUsers = await User.countDocuments();
+    const activeUsers = await User.countDocuments({ status: 'active' });
+    const telegramUsers = await User.countDocuments({ telegramBound: true });
+    const adminUsers = await User.countDocuments({ role: 'admin' });
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayUsers = await User.countDocuments({ createdAt: { $gte: today } });
+
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const weekUsers = await User.countDocuments({ createdAt: { $gte: weekAgo } });
+
+    res.json({
+      totalUsers,
+      activeUsers,
+      telegramUsers,
+      adminUsers,
+      todayUsers,
+      weekUsers
+    });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
 
 // 获取所有用户（管理员）
-router.get('/', auth, async (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    if (!req.user || req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const users = await User.find()
-      .select('-password')
+      .select('-password -totpSecretEncrypted -totpTempSecretEncrypted')
       .sort({ createdAt: -1 })
       .limit(1000);
 
@@ -69,13 +95,9 @@ router.get('/', auth, async (req, res) => {
 });
 
 // 获取用户详情（管理员）
-router.get('/:userId', auth, async (req, res) => {
+router.get('/:userId', async (req, res) => {
   try {
-    if (!req.user || req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
-    const user = await User.findById(req.params.userId).select('-password');
+    const user = await User.findById(req.params.userId).select('-password -totpSecretEncrypted -totpTempSecretEncrypted');
     if (!user) {
       return res.status(404).json({ error: '用户不存在' });
     }
@@ -112,12 +134,8 @@ router.get('/:userId', auth, async (req, res) => {
 });
 
 // 更新用户状态（管理员）
-router.patch('/:userId/status', auth, async (req, res) => {
+router.patch('/:userId/status', async (req, res) => {
   try {
-    if (!req.user || req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const { status } = req.body;
     if (!['active', 'disabled'].includes(status)) {
       return res.status(400).json({ error: '无效的状态' });
@@ -127,7 +145,7 @@ router.patch('/:userId/status', auth, async (req, res) => {
       req.params.userId,
       { status },
       { new: true }
-    ).select('-password');
+    ).select('-password -totpSecretEncrypted -totpTempSecretEncrypted');
 
     if (!user) {
       return res.status(404).json({ error: '用户不存在' });
@@ -140,12 +158,8 @@ router.patch('/:userId/status', auth, async (req, res) => {
 });
 
 // 更新用户角色（管理员）
-router.patch('/:userId/role', auth, async (req, res) => {
+router.patch('/:userId/role', async (req, res) => {
   try {
-    if (!req.user || req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const { role } = req.body;
     if (!['user', 'admin'].includes(role)) {
       return res.status(400).json({ error: '无效的角色' });
@@ -155,7 +169,7 @@ router.patch('/:userId/role', auth, async (req, res) => {
       req.params.userId,
       { role },
       { new: true }
-    ).select('-password');
+    ).select('-password -totpSecretEncrypted -totpTempSecretEncrypted');
 
     if (!user) {
       return res.status(404).json({ error: '用户不存在' });
@@ -168,53 +182,14 @@ router.patch('/:userId/role', auth, async (req, res) => {
 });
 
 // 删除用户（管理员）
-router.delete('/:userId', auth, async (req, res) => {
+router.delete('/:userId', async (req, res) => {
   try {
-    if (!req.user || req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const user = await User.findByIdAndDelete(req.params.userId);
     if (!user) {
       return res.status(404).json({ error: '用户不存在' });
     }
 
     res.json({ message: '用户已删除' });
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-});
-
-// 获取用户统计（管理员）
-router.get('/stats/overview', auth, async (req, res) => {
-  try {
-    if (!req.user || req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
-    const totalUsers = await User.countDocuments();
-    const activeUsers = await User.countDocuments({ status: 'active' });
-    const telegramUsers = await User.countDocuments({ telegramBound: true });
-    const adminUsers = await User.countDocuments({ role: 'admin' });
-
-    // 今日新增用户
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayUsers = await User.countDocuments({ createdAt: { $gte: today } });
-
-    // 本周新增用户
-    const weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7);
-    const weekUsers = await User.countDocuments({ createdAt: { $gte: weekAgo } });
-
-    res.json({
-      totalUsers,
-      activeUsers,
-      telegramUsers,
-      adminUsers,
-      todayUsers,
-      weekUsers
-    });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }

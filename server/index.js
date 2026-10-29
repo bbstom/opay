@@ -1,101 +1,128 @@
+const fs = require('fs');
+const path = require('path');
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-require('dotenv').config();
+// 固定读项目根目录 .env，避免宝塔/PM2 工作目录在 server/ 时读不到
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+
+const { validateEnv, getAllowedOrigins } = require('./utils/env');
+const { rateLimit } = require('./middleware/audit');
+
+// 启动前校验环境
+validateEnv();
 
 const authRoutes = require('./routes/auth');
 const adRoutes = require('./routes/ads');
 const paymentRoutes = require('./routes/payments');
 const settingsRoutes = require('./routes/settings');
 const walletRoutes = require('./routes/wallet');
-const walletsRoutes = require('./routes/wallets'); // 多钱包管理路由
-const usersRoutes = require('./routes/users'); // 用户管理路由
-const faqRoutes = require('./routes/faq'); // FAQ路由
-const ticketsRoutes = require('./routes/tickets'); // 工单路由
-const swapRoutes = require('./routes/swap'); // 闪兑路由
-const telegramRoutes = require('./routes/telegram'); // Telegram管理路由
-const telegramCommandsRoutes = require('./routes/telegram-commands'); // Telegram命令管理路由
-const seoRoutes = require('./routes/seo'); // SEO静态页面生成路由
-const blogRoutes = require('./routes/blog'); // 博客路由
+const walletsRoutes = require('./routes/wallets');
+const usersRoutes = require('./routes/users');
+const faqRoutes = require('./routes/faq');
+const ticketsRoutes = require('./routes/tickets');
+const swapRoutes = require('./routes/swap');
+const telegramRoutes = require('./routes/telegram');
+const telegramCommandsRoutes = require('./routes/telegram-commands');
+const seoRoutes = require('./routes/seo');
+const blogRoutes = require('./routes/blog');
+const rewardRoutes = require('./routes/rewards');
 const exchangeRateService = require('./services/exchangeRateService');
 const orderTimeoutService = require('./services/orderTimeoutService');
-const swapService = require('./services/swapService'); // 闪兑服务
-const walletUpdateService = require('./services/walletUpdateService'); // 钱包余额更新服务
-const broadcastScheduler = require('./services/broadcastScheduler'); // 群发定时服务
-const { MultiBotManager } = require('./bot/MultiBotManager'); // Telegram Bot 多实例管理器
+const swapService = require('./services/swapService');
+const walletUpdateService = require('./services/walletUpdateService');
+const broadcastScheduler = require('./services/broadcastScheduler');
+const { getBotManager } = require('./bot/MultiBotManager');
 
 const app = express();
+app.set('trust proxy', 1);
+app.disable('x-powered-by');
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
 
-// CORS 配置 - 允许前端域名访问
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:5173',
-  'https://kk.vpno.eu.org',
-  'https://dd.vpno.eu.org',  // 添加实际使用的域名
-  process.env.APP_URL,
-  process.env.FRONTEND_URL
-].filter(Boolean);
+const allowedOrigins = getAllowedOrigins();
 
 const corsOptions = {
   origin: function (origin, callback) {
-    // 允许没有 origin 的请求（比如移动应用或 Postman）
     if (!origin) return callback(null, true);
-    
-    // 检查是否在允许列表中
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      // 开发环境：允许所有 localhost 和 127.0.0.1
-      if (process.env.NODE_ENV !== 'production' && 
-          (origin.includes('localhost') || origin.includes('127.0.0.1'))) {
-        callback(null, true);
-      } else {
-        console.error('❌ CORS 错误 - 不允许的来源:', origin);
-        console.log('允许的来源:', allowedOrigins);
-        callback(new Error('Not allowed by CORS'));
-      }
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
     }
+
+    // 开发环境放行本机
+    if (
+      process.env.NODE_ENV !== 'production' &&
+      (origin.includes('localhost') || origin.includes('127.0.0.1'))
+    ) {
+      return callback(null, true);
+    }
+
+    console.error('❌ CORS 错误 - 不允许的来源:', origin);
+    callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
   optionsSuccessStatus: 200
 };
-app.use(cors(corsOptions));
-app.use(express.json());
 
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/fastpay')
+app.use(cors(corsOptions));
+app.use(express.json({ limit: '2mb' }));
+
+// 全局限流（宽松）；敏感路由在各自 router 再加严
+const globalMax = parseInt(process.env.RATE_LIMIT_MAX || '300', 10);
+app.use('/api', rateLimit(globalMax, 60000));
+
+mongoose
+  .connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/fastpay')
   .then(() => {
     console.log('✅ MongoDB 连接成功');
-    // 启动汇率自动更新服务
     exchangeRateService.startAutoUpdate();
-    // 启动订单超时检查服务
     orderTimeoutService.start();
-    // 启动闪兑监控服务
     swapService.startMonitoring();
-    // 启动钱包余额自动更新服务（每小时更新一次）
     walletUpdateService.start(60);
-    // 启动群发定时服务（每 5 分钟检查一次）
     broadcastScheduler.start(5);
-    
-    // 启动 Telegram Bot（支持多个 Bot）
-    const botManager = new MultiBotManager();
-    botManager.start().catch(err => console.error('❌ Bot 启动失败:', err));
+
+    getBotManager().start().catch((err) => console.error('❌ Bot 启动失败:', err));
   })
-  .catch(err => console.error('❌ MongoDB 连接失败:', err));
+  .catch((err) => console.error('❌ MongoDB 连接失败:', err));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/ads', adRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/wallet', walletRoutes);
-app.use('/api/wallets', walletsRoutes); // 多钱包管理 API
-app.use('/api/users', usersRoutes); // 用户管理 API
-app.use('/api/faq', faqRoutes); // FAQ API
-app.use('/api/tickets', ticketsRoutes); // 工单 API
-app.use('/api/swap', swapRoutes); // 闪兑 API
-app.use('/api/telegram', telegramRoutes); // Telegram管理 API
-app.use('/api/telegram-commands', telegramCommandsRoutes); // Telegram命令管理 API
-app.use('/api/seo', seoRoutes); // SEO静态页面生成 API
-app.use('/api/blog', blogRoutes); // 博客 API
+app.use('/api/wallets', walletsRoutes);
+app.use('/api/users', usersRoutes);
+app.use('/api/faq', faqRoutes);
+app.use('/api/tickets', ticketsRoutes);
+app.use('/api/swap', swapRoutes);
+app.use('/api/telegram', telegramRoutes);
+app.use('/api/telegram-commands', telegramCommandsRoutes);
+app.use('/api/seo', seoRoutes);
+app.use('/api/blog', blogRoutes);
+app.use('/api/rewards', rewardRoutes);
+
+// 整站反代到 Node 时提供前端（需先在项目根目录 npm run build）
+const distDir = path.join(__dirname, '..', 'dist');
+const distIndex = path.join(distDir, 'index.html');
+if (fs.existsSync(distIndex)) {
+  app.use(express.static(distDir));
+}
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api')) return next();
+  if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+  if (!fs.existsSync(distIndex)) {
+    return res
+      .status(503)
+      .type('text/plain; charset=utf-8')
+      .send('前端未构建。请在网站根目录执行 npm run build 后重启 Node 项目。');
+  }
+  res.sendFile(distIndex);
+});
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

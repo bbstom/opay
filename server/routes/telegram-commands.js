@@ -2,7 +2,14 @@ const express = require('express');
 const router = express.Router();
 const TelegramCommand = require('../models/TelegramCommand');
 const { auth, adminAuth } = require('../middleware/auth');
-const { getBotInstance } = require('../bot');
+const { getBotManager } = require('../bot/MultiBotManager');
+
+const reloadBotCommands = async () => {
+  const manager = getBotManager();
+  if (manager && typeof manager.reloadCommands === 'function') {
+    await manager.reloadCommands();
+  }
+};
 
 // 获取所有命令
 router.get('/', auth, adminAuth, async (req, res) => {
@@ -90,10 +97,7 @@ router.post('/', auth, adminAuth, async (req, res) => {
     await newCommand.save();
 
     // 重新加载 Bot 命令
-    const bot = getBotInstance();
-    if (bot && bot.reloadCommands) {
-      await bot.reloadCommands();
-    }
+    await reloadBotCommands();
 
     res.status(201).json({ 
       message: '命令创建成功',
@@ -156,10 +160,7 @@ router.put('/:id', auth, adminAuth, async (req, res) => {
     await existingCommand.save();
 
     // 重新加载 Bot 命令
-    const bot = getBotInstance();
-    if (bot && bot.reloadCommands) {
-      await bot.reloadCommands();
-    }
+    await reloadBotCommands();
 
     res.json({ 
       message: '命令更新成功',
@@ -182,10 +183,7 @@ router.delete('/:id', auth, adminAuth, async (req, res) => {
     await TelegramCommand.findByIdAndDelete(req.params.id);
 
     // 重新加载 Bot 命令
-    const bot = getBotInstance();
-    if (bot && bot.reloadCommands) {
-      await bot.reloadCommands();
-    }
+    await reloadBotCommands();
 
     res.json({ message: '命令删除成功' });
   } catch (error) {
@@ -211,10 +209,7 @@ router.post('/reorder', auth, adminAuth, async (req, res) => {
     await Promise.all(updates);
 
     // 重新加载 Bot 命令
-    const bot = getBotInstance();
-    if (bot && bot.reloadCommands) {
-      await bot.reloadCommands();
-    }
+    await reloadBotCommands();
 
     res.json({ message: '排序更新成功' });
   } catch (error) {
@@ -235,10 +230,7 @@ router.post('/:id/toggle', auth, adminAuth, async (req, res) => {
     await command.save();
 
     // 重新加载 Bot 命令
-    const bot = getBotInstance();
-    if (bot && bot.reloadCommands) {
-      await bot.reloadCommands();
-    }
+    await reloadBotCommands();
 
     res.json({ 
       message: `命令已${command.enabled ? '启用' : '禁用'}`,
@@ -253,12 +245,12 @@ router.post('/:id/toggle', auth, adminAuth, async (req, res) => {
 // 重新加载所有命令到 Telegram
 router.post('/reload', auth, adminAuth, async (req, res) => {
   try {
-    const bot = getBotInstance();
-    if (!bot || !bot.reloadCommands) {
+    const manager = getBotManager();
+    if (!manager || !manager.getBotInstance() || typeof manager.reloadCommands !== 'function') {
       return res.status(500).json({ error: 'Bot 未启动或不支持重新加载' });
     }
 
-    await bot.reloadCommands();
+    await manager.reloadCommands();
     res.json({ message: 'Bot 命令已重新加载' });
   } catch (error) {
     console.error('重新加载命令失败:', error);

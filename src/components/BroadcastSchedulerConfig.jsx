@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import axios from '../api/client';
 
 const BroadcastSchedulerConfig = () => {
   const [config, setConfig] = useState(null);
@@ -14,11 +14,7 @@ const BroadcastSchedulerConfig = () => {
 
   const loadConfig = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/telegram/broadcast-scheduler/config`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const response = await axios.get('/api/telegram/broadcast-scheduler/config');
       setConfig(response.data);
       setIntervalMinutes(response.data.intervalMinutes);
     } catch (error) {
@@ -37,11 +33,9 @@ const BroadcastSchedulerConfig = () => {
     setMessage('');
 
     try {
-      const token = localStorage.getItem('token');
       const response = await axios.put(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/telegram/broadcast-scheduler/config`,
-        { intervalMinutes },
-        { headers: { Authorization: `Bearer ${token}` } }
+        '/api/telegram/broadcast-scheduler/config',
+        { intervalMinutes }
       );
 
       setConfig(response.data.config);
@@ -60,12 +54,7 @@ const BroadcastSchedulerConfig = () => {
     setMessage('');
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.post(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/telegram/broadcast-scheduler/check`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await axios.post('/api/telegram/broadcast-scheduler/check');
 
       setMessage('✅ 已触发检查，请查看服务器日志');
       setTimeout(() => setMessage(''), 3000);

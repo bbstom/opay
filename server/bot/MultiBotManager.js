@@ -3,6 +3,7 @@ const User = require('../models/User');
 const Settings = require('../models/Settings');
 const contentService = require('./services/contentService');
 const { registerCustomCommands, handleCommand, initializeDefaultCommands } = require('./commandHandler');
+const { getEnabledTelegramBots } = require('../utils/telegramBots');
 
 // 导入处理器
 const startHandler = require('./handlers/start');
@@ -19,43 +20,25 @@ const swapHandler = require('./handlers/swap');
 class MultiBotManager {
   constructor() {
     this.bots = [];
-    this.initializeBots();
+    this.shutdownHooked = false;
+    this.reloadQueue = Promise.resolve();
   }
 
   /**
-   * 初始化所有 Bot 实例
+   * 从数据库加载已启用且填了 Token 的 Bot
    */
-  initializeBots() {
-    // 检查是否配置了多个 Bot
-    const multiTokens = process.env.TELEGRAM_BOT_TOKENS;
-    const multiUsernames = process.env.TELEGRAM_BOT_USERNAMES;
-
-    if (multiTokens && multiUsernames) {
-      // 多 Bot 模式
-      const tokens = multiTokens.split(',').map(t => t.trim());
-      const usernames = multiUsernames.split(',').map(u => u.trim());
-
-      if (tokens.length !== usernames.length) {
-        console.error('❌ TELEGRAM_BOT_TOKENS 和 TELEGRAM_BOT_USERNAMES 数量不匹配');
-        return;
-      }
-
-      console.log(`🤖 检测到 ${tokens.length} 个 Bot 配置`);
-
-      tokens.forEach((token, index) => {
-        if (token) {
-          const username = usernames[index];
-          this.createBot(token, username, index + 1);
-        }
-      });
-    } else if (process.env.TELEGRAM_BOT_TOKEN) {
-      // 单 Bot 模式（向后兼容）
-      const token = process.env.TELEGRAM_BOT_TOKEN;
-      const username = process.env.TELEGRAM_BOT_USERNAME || 'bot';
-      this.createBot(token, username, 1);
-    } else {
-      console.log('⚠️  未配置 TELEGRAM_BOT_TOKEN，跳过 Bot 启动');
+  async loadBotsFromDb() {
+    const settings = await Settings.findOne();
+    const configs = getEnabledTelegramBots(settings);
+    if (!configs.length) {
+      console.log('⚠️  未在后台配置 Telegram Bot Token，跳过 Bot 启动');
+      return;
     }
+
+    console.log(`🤖 从数据库加载 ${configs.length} 个 Bot 配置`);
+    configs.forEach((cfg, index) => {
+      this.createBot(cfg.token, cfg.username || 'bot', index + 1);
+    });
   }
 
   /**
@@ -77,7 +60,6 @@ class MultiBotManager {
 
       this.bots.push({
         bot,
-        token,
         username,
         index
       });
@@ -313,6 +295,12 @@ class MultiBotManager {
         return ticketsHandler.handleTicketReply(ctx);
       case 'waiting_new_email':
         return startHandler.handleNewEmail(ctx);
+      case 'waiting_trx_deposit_hash':
+        return energyHandler.handleDepositHash(ctx);
+      case 'waiting_energy_balance_address':
+        return energyHandler.handleBalanceAddress(ctx);
+      case 'waiting_energy_balance_amount':
+        return energyHandler.handleBalanceAmount(ctx);
       default:
         return ctx.reply(
           '💡 请使用菜单选择功能，或发送 /menu 查看菜单',
@@ -400,59 +388,89 @@ class MultiBotManager {
     }
   }
 
+  hookShutdown() {
+    if (this.shutdownHooked) return;
+    this.shutdownHooked = true;
+    process.once('SIGINT', () => this.stop('SIGINT'));
+    process.once('SIGTERM', () => this.stop('SIGTERM'));
+  }
+
   /**
-   * 启动所有 Bot
+   * 启动所有 Bot（从数据库读 Token）
    */
   async start() {
+    this.hookShutdown();
+    await this.reloadFromDb();
+  }
+
+  /**
+   * 按数据库配置重建 Bot（保存后台 Token 后调用）
+   */
+  reloadFromDb() {
+    this.reloadQueue = this.reloadQueue
+      .then(() => this._reloadFromDb())
+      .catch((error) => {
+        console.error('❌ 按数据库配置加载 Bot 失败:', error);
+      });
+    return this.reloadQueue;
+  }
+
+  async _reloadFromDb() {
+    await this.stopRunning('reload');
+    await this.loadBotsFromDb();
+    await this.launchBots();
+  }
+
+  async launchBots() {
     if (this.bots.length === 0) {
       console.log('⚠️  没有可用的 Bot 实例');
       return;
     }
 
     try {
-      // 初始化默认命令
       await initializeDefaultCommands();
-      
-      // 并行启动所有 Bot
+
       const launchPromises = this.bots.map(async (botInstance) => {
         const { bot, username, index } = botInstance;
-        
+
         try {
           console.log(`🔄 正在启动 Bot #${index}: @${username}...`);
-          
-          // 注册自定义命令
           await registerCustomCommands(bot);
-          
-          // 启动 Bot（不等待，让它在后台运行）
+
           bot.launch().then(() => {
             console.log(`🤖 Bot #${index} 已启动: @${username}`);
           }).catch((error) => {
-            // 忽略启动时的旧回调超时错误
             if (error.message && error.message.includes('query is too old')) {
               console.log(`⚠️  Bot #${index} (@${username}) 启动时有旧回调超时（可忽略）`);
             } else {
               console.error(`❌ Bot #${index} (@${username}) 启动失败:`, error.message);
             }
           });
-          
-          // 等待一小段时间确保 Bot 开始启动
-          await new Promise(resolve => setTimeout(resolve, 100));
-          
+
+          await new Promise((resolve) => setTimeout(resolve, 100));
         } catch (error) {
           console.error(`❌ Bot #${index} (@${username}) 初始化失败:`, error.message);
-          console.error('详细错误:', error);
         }
       });
 
       await Promise.all(launchPromises);
       console.log(`✅ 所有 Bot 已启动 (共 ${this.bots.length} 个)`);
-
-      // 优雅关闭
-      process.once('SIGINT', () => this.stop('SIGINT'));
-      process.once('SIGTERM', () => this.stop('SIGTERM'));
     } catch (error) {
       console.error('❌ Bot 启动失败:', error);
     }
+  }
+
+  async stopRunning(reason = 'stop') {
+    const running = this.bots;
+    this.bots = [];
+    await Promise.all(running.map(async ({ bot, username }) => {
+      try {
+        await Promise.resolve(bot.stop(reason));
+        console.log(`✅ Bot @${username} 已停止`);
+      } catch (_) {
+        // 未启动或已停止时忽略
+      }
+    }));
   }
 
   /**
@@ -460,10 +478,7 @@ class MultiBotManager {
    */
   stop(signal) {
     console.log(`\n🛑 收到 ${signal} 信号，正在停止所有 Bot...`);
-    this.bots.forEach(({ bot, username }) => {
-      bot.stop(signal);
-      console.log(`✅ Bot @${username} 已停止`);
-    });
+    this.stopRunning(signal).catch(() => {});
   }
 
   /**
@@ -503,14 +518,18 @@ class MultiBotManager {
   }
 }
 
-// 导出单例
+// 导出单例（与 server/index 共用，避免再启一套 Bot）
 let instance = null;
 
-function getBotInstance() {
+function getBotManager() {
   if (!instance) {
     instance = new MultiBotManager();
   }
-  return instance.getBotInstance();
+  return instance;
 }
 
-module.exports = { MultiBotManager, getBotInstance };
+function getBotInstance() {
+  return getBotManager().getBotInstance();
+}
+
+module.exports = { MultiBotManager, getBotManager, getBotInstance };

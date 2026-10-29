@@ -104,9 +104,8 @@ const ticketSchema = new mongoose.Schema({
   }
 });
 
-// 索引
+// 索引（ticketNumber 已在字段 unique:true，不再重复）
 ticketSchema.index({ userId: 1, status: 1 });
-ticketSchema.index({ ticketNumber: 1 });
 ticketSchema.index({ status: 1, createdAt: -1 });
 
 // 更新时间中间件

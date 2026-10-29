@@ -7,7 +7,7 @@ const ServiceOverviewPage = () => {
 
   const services = [
     {
-      icon: <Wallet className="w-12 h-12 text-cyan-500" />,
+      icon: <Wallet className="w-8 h-8 text-cyan-500" />,
       title: 'USDT 代付',
       description: '快速、安全的 USDT-TRC20 自动化转账服务，支持批量发放，实时到账。',
       features: ['自动化处理', '批量转账', '实时到账', 'API 接入'],
@@ -16,7 +16,7 @@ const ServiceOverviewPage = () => {
       color: 'cyan'
     },
     {
-      icon: <Zap className="w-12 h-12 text-blue-500" />,
+      icon: <Zap className="w-8 h-8 text-blue-500" />,
       title: 'TRX 代付',
       description: '波场 TRX 自动化转账服务，为您的 DApp 或平台提供稳定的 TRX 发放能力。',
       features: ['快速确认', '低手续费', '稳定可靠', '7x24 服务'],
@@ -25,7 +25,7 @@ const ServiceOverviewPage = () => {
       color: 'blue'
     },
     {
-      icon: <Battery className="w-12 h-12 text-orange-500" />,
+      icon: <Battery className="w-8 h-8 text-orange-500" />,
       title: '能量租赁',
       description: 'TRON 能量租赁服务，大幅降低 USDT 转账手续费，节省高达 90% 的成本。',
       features: ['降低 90% 费用', '即时到账', '灵活租期', '自动续租'],
@@ -34,7 +34,7 @@ const ServiceOverviewPage = () => {
       color: 'orange'
     },
     {
-      icon: <ArrowRightLeft className="w-12 h-12 text-purple-500" />,
+      icon: <ArrowRightLeft className="w-8 h-8 text-purple-500" />,
       title: '闪兑服务',
       description: 'TRX/USDT 快速兑换，实时汇率，秒级到账，支持大额交易。',
       features: ['实时汇率', '秒级到账', '无需注册', '大额支持'],
@@ -103,34 +103,34 @@ const ServiceOverviewPage = () => {
         structuredData={structuredData}
       />
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[400px] bg-gradient-to-b from-cyan-50/50 to-transparent -z-10"></div>
+      <section className="relative pt-16 pb-8 overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[180px] bg-gradient-to-b from-cyan-50/50 to-transparent -z-10"></div>
         
-        <div className="max-w-7xl mx-auto px-6 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white rounded-full border border-cyan-100 shadow-sm mb-6">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-white rounded-full border border-cyan-100 shadow-sm mb-3">
             <span className="text-[11px] font-black text-cyan-600 uppercase tracking-widest">Service Overview</span>
           </div>
           
-          <h1 className="text-5xl lg:text-6xl font-black text-slate-900 leading-tight mb-6">
+          <h1 className="text-2xl font-black text-slate-900 leading-tight mb-2">
             服务总览
           </h1>
           
-          <p className="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed mb-8">
+          <p className="text-sm text-slate-600 max-w-3xl mx-auto mb-5">
             提供全方位的加密货币支付解决方案，包括 USDT/TRX 代付、能量租赁、闪兑服务等。
             <br />
             安全、快速、专业的服务，助力您的业务发展。
           </p>
 
-          <div className="flex flex-wrap justify-center gap-4">
+          <div className="flex flex-wrap justify-center gap-2.5">
             <button 
               onClick={() => navigate('/pay')}
-              className="bg-cyan-500 text-white px-8 py-4 rounded-2xl font-black hover:bg-cyan-600 transition-all shadow-xl shadow-cyan-100"
+              className="bg-cyan-500 text-white px-4 py-2 rounded-lg font-bold hover:bg-cyan-600 transition-all text-sm"
             >
               立即使用
             </button>
             <button 
               onClick={() => navigate('/guides/beginner')}
-              className="bg-white border-2 border-cyan-500 text-cyan-600 px-8 py-4 rounded-2xl font-black hover:bg-cyan-50 transition-all"
+              className="bg-white border border-cyan-500 text-cyan-600 px-4 py-2 rounded-lg font-bold hover:bg-cyan-50 transition-all text-sm"
             >
               新手教程
             </button>
@@ -139,26 +139,26 @@ const ServiceOverviewPage = () => {
       </section>
 
       {/* 核心服务 */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-black text-slate-900 mb-4">核心服务</h2>
-            <p className="text-lg text-slate-600">为您提供专业的加密货币支付解决方案</p>
+      <section className="py-8 bg-white">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-6">
+            <h2 className="text-xl font-bold text-slate-900 mb-4">核心服务</h2>
+            <p className="text-sm text-slate-600">为您提供专业的加密货币支付解决方案</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {services.map((service, index) => (
               <div 
                 key={index}
-                className="bg-gradient-to-br from-white to-slate-50 rounded-2xl border border-slate-200 p-8 hover:shadow-2xl transition-all duration-300 group"
+                className="bg-gradient-to-br from-white to-slate-50 rounded-lg border border-slate-200 p-5 hover:shadow-lg transition-all duration-300 group"
               >
                 <div className="flex items-start gap-6">
-                  <div className={`bg-${service.color}-50 p-4 rounded-2xl group-hover:scale-110 transition-transform`}>
+                  <div className={`bg-${service.color}-50 p-4 rounded-lg group-hover:scale-110 transition-transform`}>
                     {service.icon}
                   </div>
                   
                   <div className="flex-1">
-                    <h3 className="text-2xl font-black text-slate-900 mb-3">{service.title}</h3>
+                    <h3 className="text-lg font-bold text-slate-900 mb-3">{service.title}</h3>
                     <p className="text-slate-600 mb-4 leading-relaxed">{service.description}</p>
                     
                     <div className="grid grid-cols-2 gap-2 mb-6">
@@ -186,24 +186,24 @@ const ServiceOverviewPage = () => {
       </section>
 
       {/* 使用指南 */}
-      <section className="py-20 bg-slate-50">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-black text-slate-900 mb-4">使用指南</h2>
-            <p className="text-lg text-slate-600">帮助您快速上手，充分利用我们的服务</p>
+      <section className="py-8 bg-slate-50">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-6">
+            <h2 className="text-xl font-bold text-slate-900 mb-4">使用指南</h2>
+            <p className="text-sm text-slate-600">帮助您快速上手，充分利用我们的服务</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {guides.map((guide, index) => (
               <div 
                 key={index}
                 onClick={() => navigate(guide.link)}
-                className="bg-white rounded-2xl border border-slate-200 p-8 hover:shadow-xl transition-all cursor-pointer group"
+                className="bg-white rounded-lg border border-slate-200 p-5 hover:shadow-md transition-all cursor-pointer group"
               >
-                <div className="bg-slate-50 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <div className="bg-slate-50 w-10 h-10 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                   {guide.icon}
                 </div>
-                <h3 className="text-xl font-black text-slate-900 mb-3">{guide.title}</h3>
+                <h3 className="text-base font-bold text-slate-900 mb-3">{guide.title}</h3>
                 <p className="text-slate-600 leading-relaxed mb-4">{guide.description}</p>
                 <div className="text-cyan-600 font-bold flex items-center gap-2 group-hover:gap-3 transition-all">
                   查看详情 <span>→</span>
@@ -215,24 +215,24 @@ const ServiceOverviewPage = () => {
       </section>
 
       {/* 关于我们 */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-black text-slate-900 mb-4">关于我们</h2>
-            <p className="text-lg text-slate-600">了解我们的团队和服务保障</p>
+      <section className="py-8 bg-white">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-6">
+            <h2 className="text-xl font-bold text-slate-900 mb-4">关于我们</h2>
+            <p className="text-sm text-slate-600">了解我们的团队和服务保障</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {aboutItems.map((item, index) => (
               <div 
                 key={index}
                 onClick={() => navigate(item.link)}
-                className="bg-gradient-to-br from-slate-50 to-white rounded-2xl border border-slate-200 p-8 hover:shadow-xl transition-all cursor-pointer group"
+                className="bg-gradient-to-br from-slate-50 to-white rounded-lg border border-slate-200 p-5 hover:shadow-md transition-all cursor-pointer group"
               >
-                <div className="bg-white w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-sm group-hover:scale-110 transition-transform">
+                <div className="bg-white w-10 h-10 rounded-lg flex items-center justify-center mb-6 shadow-sm group-hover:scale-110 transition-transform">
                   {item.icon}
                 </div>
-                <h3 className="text-xl font-black text-slate-900 mb-3">{item.title}</h3>
+                <h3 className="text-base font-bold text-slate-900 mb-3">{item.title}</h3>
                 <p className="text-slate-600 leading-relaxed mb-4">{item.description}</p>
                 <div className="text-cyan-600 font-bold flex items-center gap-2 group-hover:gap-3 transition-all">
                   了解更多 <span>→</span>
@@ -244,23 +244,23 @@ const ServiceOverviewPage = () => {
       </section>
 
       {/* 数据统计 */}
-      <section className="py-20 bg-gradient-to-br from-cyan-500 to-blue-600 text-white">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
+      <section className="py-8 bg-gradient-to-br from-cyan-500 to-blue-600 text-white">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
             <div>
-              <div className="text-5xl font-black mb-2">12,000+</div>
+              <div className="text-2xl font-black mb-1">12,000+</div>
               <div className="text-cyan-100">服务用户</div>
             </div>
             <div>
-              <div className="text-5xl font-black mb-2">500,000+</div>
+              <div className="text-2xl font-black mb-1">500,000+</div>
               <div className="text-cyan-100">交易笔数</div>
             </div>
             <div>
-              <div className="text-5xl font-black mb-2">$50M+</div>
+              <div className="text-2xl font-black mb-1">$50M+</div>
               <div className="text-cyan-100">交易金额</div>
             </div>
             <div>
-              <div className="text-5xl font-black mb-2">99.9%</div>
+              <div className="text-2xl font-black mb-1">99.9%</div>
               <div className="text-cyan-100">服务可用性</div>
             </div>
           </div>
@@ -268,22 +268,22 @@ const ServiceOverviewPage = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-white">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <h2 className="text-4xl font-black text-slate-900 mb-6">准备开始了吗？</h2>
-          <p className="text-xl text-slate-600 mb-8">
+      <section className="py-8 bg-white">
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <h2 className="text-xl font-bold text-slate-900 mb-3">准备开始了吗？</h2>
+          <p className="text-sm text-slate-600 mb-4">
             立即体验我们的服务，或联系我们的客服团队获取更多帮助
           </p>
-          <div className="flex flex-wrap justify-center gap-4">
+          <div className="flex flex-wrap justify-center gap-2.5">
             <button 
               onClick={() => navigate('/pay')}
-              className="bg-cyan-500 text-white px-10 py-4 rounded-2xl font-black hover:bg-cyan-600 transition-all shadow-xl shadow-cyan-100"
+              className="bg-cyan-500 text-white px-4 py-2 rounded-lg font-bold hover:bg-cyan-600 transition-all text-sm"
             >
               立即使用
             </button>
             <button 
               onClick={() => navigate('/about/contact')}
-              className="bg-white border-2 border-slate-300 text-slate-700 px-10 py-4 rounded-2xl font-black hover:bg-slate-50 transition-all"
+              className="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-lg font-bold hover:bg-slate-50 transition-all text-sm"
             >
               联系客服
             </button>

@@ -27,8 +27,8 @@ const CompanyPage = () => {
         }}
       />
       {/* 面包屑 */}
-      <div className="bg-white border-b border-slate-200 pt-20">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+      <div className="bg-white border-b border-slate-200 pt-14">
+        <div className="max-w-7xl mx-auto px-4 py-2">
           <div className="flex items-center gap-2 text-sm text-slate-600">
             <button onClick={() => navigate('/')} className="hover:text-cyan-600">首页</button>
             <span>/</span>
@@ -40,14 +40,14 @@ const CompanyPage = () => {
       </div>
 
       {/* Hero */}
-      <section className="relative pt-20 pb-16">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[300px] bg-gradient-to-b from-cyan-50/50 to-transparent -z-10"></div>
-        <div className="max-w-7xl mx-auto px-6">
+      <section className="relative pt-6 pb-8">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[180px] bg-gradient-to-b from-cyan-50/50 to-transparent -z-10"></div>
+        <div className="max-w-7xl mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-5xl lg:text-6xl font-black text-slate-900 leading-tight mb-6">
+            <h1 className="text-2xl font-black text-slate-900 leading-tight mb-2">
               关于我们
             </h1>
-            <p className="text-xl text-slate-600 leading-relaxed">
+            <p className="text-sm text-slate-600">
               专业的加密货币支付服务提供商，致力于为全球用户提供安全、快速、便捷的支付解决方案
             </p>
           </div>
@@ -55,10 +55,10 @@ const CompanyPage = () => {
       </section>
 
       {/* 公司简介 */}
-      <section className="py-16 bg-white">
-        <div className="max-w-4xl mx-auto px-6">
-          <h2 className="text-3xl font-black text-slate-900 mb-8">公司简介</h2>
-          <div className="prose prose-lg text-slate-600 leading-relaxed space-y-4">
+      <section className="py-8 bg-white">
+        <div className="max-w-4xl mx-auto px-4">
+          <h2 className="text-xl font-bold text-slate-900 mb-8">公司简介</h2>
+          <div className="prose prose-sm text-slate-600 leading-relaxed space-y-4">
             <p>
               我们是一家专注于加密货币支付领域的创新型科技公司，成立于 2022 年。
               公司总部位于新加坡，团队成员来自区块链、金融科技、互联网等多个领域，拥有丰富的行业经验。
@@ -76,9 +76,9 @@ const CompanyPage = () => {
       </section>
 
       {/* 发展历程 */}
-      <section className="py-16 bg-slate-50">
-        <div className="max-w-4xl mx-auto px-6">
-          <h2 className="text-3xl font-black text-slate-900 mb-12 text-center">发展历程</h2>
+      <section className="py-8 bg-slate-50">
+        <div className="max-w-4xl mx-auto px-4">
+          <h2 className="text-xl font-bold text-slate-900 mb-6 text-center">发展历程</h2>
           <div className="space-y-8">
             {[
               { year: '2022.03', title: '项目启动', desc: '团队组建，开始市场调研和技术预研' },
@@ -92,10 +92,10 @@ const CompanyPage = () => {
             ].map((item, i) => (
               <div key={i} className="flex gap-6">
                 <div className="flex-shrink-0 w-24 text-right">
-                  <div className="text-2xl font-black text-cyan-600">{item.year}</div>
+                  <div className="text-lg font-bold text-cyan-600">{item.year}</div>
                 </div>
-                <div className="flex-1 bg-white rounded-xl border border-slate-200 p-6">
-                  <h3 className="text-xl font-black text-slate-900 mb-2">{item.title}</h3>
+                <div className="flex-1 bg-white rounded-lg border border-slate-200 p-4">
+                  <h3 className="text-base font-bold text-slate-900 mb-2">{item.title}</h3>
                   <p className="text-slate-600">{item.desc}</p>
                 </div>
               </div>
@@ -105,9 +105,9 @@ const CompanyPage = () => {
       </section>
 
       {/* 服务理念 */}
-      <section className="py-16 bg-white">
-        <div className="max-w-4xl mx-auto px-6">
-          <h2 className="text-3xl font-black text-slate-900 mb-12 text-center">服务理念</h2>
+      <section className="py-8 bg-white">
+        <div className="max-w-4xl mx-auto px-4">
+          <h2 className="text-xl font-bold text-slate-900 mb-6 text-center">服务理念</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {[
               { icon: <Users />, title: '用户至上', desc: '始终将用户需求放在第一位，提供优质的服务体验' },
@@ -115,11 +115,11 @@ const CompanyPage = () => {
               { icon: <Award />, title: '安全可靠', desc: '采用银行级安全措施，确保用户资金和数据安全' },
               { icon: <TrendingUp />, title: '持续创新', desc: '不断探索新技术，为用户提供更好的产品和服务' }
             ].map((item, i) => (
-              <div key={i} className="bg-gradient-to-br from-slate-50 to-white rounded-xl border border-slate-200 p-6">
-                <div className="bg-cyan-50 w-12 h-12 rounded-xl flex items-center justify-center text-cyan-600 mb-4">
+              <div key={i} className="bg-gradient-to-br from-slate-50 to-white rounded-lg border border-slate-200 p-4">
+                <div className="bg-cyan-50 w-8 h-8 rounded-lg flex items-center justify-center text-cyan-600 mb-4">
                   {item.icon}
                 </div>
-                <h3 className="text-xl font-black text-slate-900 mb-3">{item.title}</h3>
+                <h3 className="text-base font-bold text-slate-900 mb-3">{item.title}</h3>
                 <p className="text-slate-600 leading-relaxed">{item.desc}</p>
               </div>
             ))}
@@ -128,24 +128,24 @@ const CompanyPage = () => {
       </section>
 
       {/* 数据统计 */}
-      <section className="py-16 bg-gradient-to-br from-cyan-500 to-blue-600 text-white">
-        <div className="max-w-7xl mx-auto px-6">
-          <h2 className="text-3xl font-black mb-12 text-center">数据统计</h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
+      <section className="py-8 bg-gradient-to-br from-cyan-500 to-blue-600 text-white">
+        <div className="max-w-7xl mx-auto px-4">
+          <h2 className="text-xl font-bold mb-6 text-center">数据统计</h2>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
             <div>
-              <div className="text-5xl font-black mb-2">12,000+</div>
+              <div className="text-2xl font-black mb-1">12,000+</div>
               <div className="text-cyan-100">服务用户</div>
             </div>
             <div>
-              <div className="text-5xl font-black mb-2">500,000+</div>
+              <div className="text-2xl font-black mb-1">500,000+</div>
               <div className="text-cyan-100">交易笔数</div>
             </div>
             <div>
-              <div className="text-5xl font-black mb-2">$50M+</div>
+              <div className="text-2xl font-black mb-1">$50M+</div>
               <div className="text-cyan-100">交易金额</div>
             </div>
             <div>
-              <div className="text-5xl font-black mb-2">99.9%</div>
+              <div className="text-2xl font-black mb-1">99.9%</div>
               <div className="text-cyan-100">服务可用性</div>
             </div>
           </div>
@@ -153,15 +153,15 @@ const CompanyPage = () => {
       </section>
 
       {/* CTA */}
-      <section className="py-16 bg-white">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <h2 className="text-4xl font-black text-slate-900 mb-6">加入我们</h2>
-          <p className="text-xl text-slate-600 mb-8">
+      <section className="py-8 bg-white">
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <h2 className="text-xl font-bold text-slate-900 mb-6">加入我们</h2>
+          <p className="text-sm text-slate-600 mb-4">
             成为我们的用户，体验专业的加密货币支付服务
           </p>
           <button 
             onClick={() => navigate('/login')}
-            className="bg-cyan-500 text-white px-10 py-4 rounded-2xl font-black hover:bg-cyan-600 transition-all shadow-xl"
+            className="bg-cyan-500 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-cyan-600 transition-all shadow-sm"
           >
             立即注册
           </button>

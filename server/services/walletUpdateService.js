@@ -1,5 +1,6 @@
 const Wallet = require('../models/Wallet');
 const tronService = require('./tronService');
+const { withJobLock } = require('../utils/jobLock');
 
 class WalletUpdateService {
   constructor() {
@@ -50,6 +51,7 @@ class WalletUpdateService {
    * 更新所有钱包余额
    */
   async updateAllWallets() {
+    return withJobLock('wallet-update', 10 * 60 * 1000, async () => {
     try {
       console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       console.log('🔄 开始自动更新所有钱包余额');
@@ -95,6 +97,7 @@ class WalletUpdateService {
     } catch (error) {
       console.error('❌ 更新所有钱包失败:', error);
     }
+    });
   }
 
   /**

@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import { MessageSquare, Clock, CheckCircle, AlertCircle, Send, X, Filter } from 'lucide-react';
-import axios from 'axios';
+import axios from '../api/client';
 import AdminLayout from '../components/AdminLayout';
 
 const AdminTicketsPage = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -16,12 +14,8 @@ const AdminTicketsPage = () => {
   const [replyMessage, setReplyMessage] = useState('');
 
   useEffect(() => {
-    if (!user || user.role !== 'admin') {
-      navigate('/login');
-      return;
-    }
     fetchTickets();
-  }, [user, navigate, filterStatus, filterPriority]);
+  }, [filterStatus, filterPriority]);
 
   const fetchTickets = async () => {
     try {
@@ -126,7 +120,7 @@ const AdminTicketsPage = () => {
     <AdminLayout>
       <div className="max-w-7xl mx-auto">
         {/* 筛选栏 */}
-        <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6 shadow-sm">
+        <div className="bg-white rounded-lg border border-slate-200 p-4 mb-4 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Filter size={16} className="text-slate-400" />
@@ -166,7 +160,7 @@ const AdminTicketsPage = () => {
             <p className="text-slate-500">加载中...</p>
           </div>
         ) : tickets.length === 0 ? (
-          <div className="bg-white rounded-xl border border-slate-200 p-12 text-center shadow-sm">
+          <div className="bg-white rounded-lg border border-slate-200 p-12 text-center shadow-sm">
             <MessageSquare className="mx-auto mb-4 text-slate-300" size={48} />
             <p className="text-slate-500">暂无工单</p>
           </div>
@@ -176,7 +170,7 @@ const AdminTicketsPage = () => {
               <div
                 key={ticket._id}
                 onClick={() => setSelectedTicket(ticket)}
-                className="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg transition-all cursor-pointer"
+                className="bg-white rounded-lg border border-slate-200 p-4 hover:shadow-md transition-all cursor-pointer"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
@@ -208,7 +202,7 @@ const AdminTicketsPage = () => {
         {/* 工单详情模态框 */}
         {selectedTicket && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
               <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
                 <div>
                   <h3 className="text-xl font-black text-slate-900">{selectedTicket.subject}</h3>
@@ -224,7 +218,7 @@ const AdminTicketsPage = () => {
                 </button>
               </div>
 
-              <div className="p-6">
+              <div className="p-4">
                 {/* 工单操作 */}
                 <div className="bg-slate-50 rounded-lg p-4 mb-6">
                   <div className="grid grid-cols-2 gap-4">

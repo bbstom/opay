@@ -28,8 +28,8 @@ const EnergyRentalDetailPage = () => {
           "description": "降低 USDT 转账手续费的能量租赁服务"
         }}
       />
-      <div className="bg-white border-b border-slate-200 pt-20">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+      <div className="bg-white border-b border-slate-200 pt-14">
+        <div className="max-w-7xl mx-auto px-4 py-2">
           <div className="flex items-center gap-2 text-sm text-slate-600">
             <button onClick={() => navigate('/')} className="hover:text-cyan-600">首页</button>
             <span>/</span>
@@ -40,20 +40,20 @@ const EnergyRentalDetailPage = () => {
         </div>
       </div>
 
-      <section className="relative pt-20 pb-16">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[300px] bg-gradient-to-b from-orange-50/50 to-transparent -z-10"></div>
-        <div className="max-w-7xl mx-auto px-6">
+      <section className="relative pt-6 pb-8">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[180px] bg-gradient-to-b from-orange-50/50 to-transparent -z-10"></div>
+        <div className="max-w-7xl mx-auto px-4">
           <div className="max-w-4xl">
-            <h1 className="text-5xl lg:text-6xl font-black text-slate-900 leading-tight mb-6">
+            <h1 className="text-2xl font-black text-slate-900 leading-tight mb-2">
               TRON 能量租赁
             </h1>
-            <p className="text-xl text-slate-600 leading-relaxed mb-8">
+            <p className="text-sm text-slate-600 mb-4">
               大幅降低 USDT-TRC20 转账手续费，节省高达 90% 的成本。
               即时到账，灵活租期，支持自动续租。
             </p>
             <button 
               onClick={() => navigate('/energy-rental')}
-              className="bg-orange-500 text-white px-8 py-4 rounded-2xl font-black hover:bg-orange-600 transition-all shadow-xl flex items-center gap-2"
+              className="bg-orange-500 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-orange-600 transition-all shadow-sm flex items-center gap-2"
             >
               立即租赁 <ArrowRight size={20} />
             </button>
@@ -61,11 +61,11 @@ const EnergyRentalDetailPage = () => {
         </div>
       </section>
 
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-6">
+      <section className="py-8 bg-white">
+        <div className="max-w-7xl mx-auto px-4">
           <div className="max-w-4xl">
-            <h2 className="text-3xl font-black text-slate-900 mb-6">什么是 TRON 能量？</h2>
-            <div className="prose prose-lg text-slate-600 space-y-4">
+            <h2 className="text-xl font-bold text-slate-900 mb-6">什么是 TRON 能量？</h2>
+            <div className="prose prose-sm text-slate-600 space-y-4">
               <p>
                 TRON 能量（Energy）是波场网络中用于执行智能合约的资源。每次 USDT-TRC20 转账都需要消耗约 31,895 能量。
                 如果账户没有足够的能量，系统会自动燃烧 TRX 来支付手续费，成本较高。
@@ -76,8 +76,8 @@ const EnergyRentalDetailPage = () => {
               </p>
             </div>
 
-            <h2 className="text-3xl font-black text-slate-900 mb-6 mt-12">能量机制详解</h2>
-            <div className="prose prose-lg text-slate-600 space-y-4">
+            <h2 className="text-xl font-bold text-slate-900 mb-6 mt-6">能量机制详解</h2>
+            <div className="prose prose-sm text-slate-600 space-y-4">
               <p>
                 波场网络采用独特的资源模型，主要包括三种资源：
               </p>
@@ -87,18 +87,18 @@ const EnergyRentalDetailPage = () => {
                 <li><strong>TRX</strong>：网络原生代币，可以燃烧来获取能量和带宽</li>
               </ul>
 
-              <h3 className="text-2xl font-bold text-slate-900 mt-8 mb-4">能量如何获得？</h3>
+              <h3 className="text-lg font-bold text-slate-900 mt-8 mb-4">能量如何获得？</h3>
               <p>
                 获取能量有两种方式：
               </p>
-              <div className="bg-blue-50 border-l-4 border-blue-500 p-6 my-6">
+              <div className="bg-blue-50 border-l-4 border-blue-500 p-4 my-6">
                 <h4 className="text-lg font-bold text-slate-900 mb-2">方式 1：质押 TRX</h4>
                 <p className="mb-0">
                   将 TRX 质押（Stake）到波场网络，可以获得能量。质押 1 TRX 约可获得 1,000 能量，
                   质押期间 TRX 被锁定，解除质押需要等待 3 天。这种方式适合长期持有 TRX 的用户。
                 </p>
               </div>
-              <div className="bg-orange-50 border-l-4 border-orange-500 p-6 my-6">
+              <div className="bg-orange-50 border-l-4 border-orange-500 p-4 my-6">
                 <h4 className="text-lg font-bold text-slate-900 mb-2">方式 2：租赁能量（推荐）</h4>
                 <p className="mb-0">
                   从能量租赁平台租赁能量，无需质押 TRX，即时到账，灵活租期。
@@ -106,7 +106,7 @@ const EnergyRentalDetailPage = () => {
                 </p>
               </div>
 
-              <h3 className="text-2xl font-bold text-slate-900 mt-8 mb-4">能量如何消耗？</h3>
+              <h3 className="text-lg font-bold text-slate-900 mt-8 mb-4">能量如何消耗？</h3>
               <p>
                 不同的智能合约操作消耗的能量不同：
               </p>
@@ -122,8 +122,8 @@ const EnergyRentalDetailPage = () => {
               </p>
             </div>
 
-            <h2 className="text-3xl font-black text-slate-900 mb-6 mt-12">成本对比分析</h2>
-            <div className="prose prose-lg text-slate-600 space-y-4">
+            <h2 className="text-xl font-bold text-slate-900 mb-6 mt-6">成本对比分析</h2>
+            <div className="prose prose-sm text-slate-600 space-y-4">
               <p>
                 让我们通过实际数据对比三种方式的成本：
               </p>
@@ -163,7 +163,7 @@ const EnergyRentalDetailPage = () => {
                 * 以上数据基于 2024 年市场价格，实际价格可能有波动。TRX 价格按 0.15 美元计算。
               </p>
 
-              <div className="bg-green-50 border-l-4 border-green-500 p-6 my-6">
+              <div className="bg-green-50 border-l-4 border-green-500 p-4 my-6">
                 <h3 className="text-xl font-bold text-slate-900 mb-3">💰 节省计算示例</h3>
                 <p className="mb-2">
                   假设您每天需要进行 100 笔 USDT 转账：
@@ -176,9 +176,9 @@ const EnergyRentalDetailPage = () => {
               </div>
             </div>
 
-            <h2 className="text-3xl font-black text-slate-900 mb-6 mt-12">租赁策略</h2>
-            <div className="prose prose-lg text-slate-600 space-y-4">
-              <h3 className="text-2xl font-bold text-slate-900 mt-8 mb-4">如何选择租赁时长？</h3>
+            <h2 className="text-xl font-bold text-slate-900 mb-6 mt-6">租赁策略</h2>
+            <div className="prose prose-sm text-slate-600 space-y-4">
+              <h3 className="text-lg font-bold text-slate-900 mt-8 mb-4">如何选择租赁时长？</h3>
               <p>
                 我们提供多种租赁时长，您可以根据实际需求选择：
               </p>
@@ -190,11 +190,11 @@ const EnergyRentalDetailPage = () => {
                 <li><strong>自动续租</strong>：适合持续运营，无需手动续费</li>
               </ul>
 
-              <h3 className="text-2xl font-bold text-slate-900 mt-8 mb-4">如何计算所需能量？</h3>
+              <h3 className="text-lg font-bold text-slate-900 mt-8 mb-4">如何计算所需能量？</h3>
               <p>
                 计算公式：所需能量 = 单次消耗 × 转账次数
               </p>
-              <div className="bg-blue-50 rounded-xl p-6 my-6">
+              <div className="bg-blue-50 rounded-lg p-4 my-6">
                 <h4 className="text-lg font-bold text-slate-900 mb-3">📊 计算示例</h4>
                 <p className="mb-2">
                   如果您计划在 1 天内进行 50 笔 USDT 转账：
@@ -207,7 +207,7 @@ const EnergyRentalDetailPage = () => {
                 </ul>
               </div>
 
-              <h3 className="text-2xl font-bold text-slate-900 mt-8 mb-4">最佳租赁时机</h3>
+              <h3 className="text-lg font-bold text-slate-900 mt-8 mb-4">最佳租赁时机</h3>
               <p>
                 能量价格会随市场波动，以下时机租赁更划算：
               </p>
@@ -219,9 +219,9 @@ const EnergyRentalDetailPage = () => {
               </ul>
             </div>
 
-            <h2 className="text-3xl font-black text-slate-900 mb-6 mt-12">使用场景</h2>
-            <div className="prose prose-lg text-slate-600 space-y-4">
-              <h3 className="text-2xl font-bold text-slate-900 mt-8 mb-4">1. 个人用户</h3>
+            <h2 className="text-xl font-bold text-slate-900 mb-6 mt-6">使用场景</h2>
+            <div className="prose prose-sm text-slate-600 space-y-4">
+              <h3 className="text-lg font-bold text-slate-900 mt-8 mb-4">1. 个人用户</h3>
               <p>
                 如果您需要频繁转账 USDT，租赁能量可以大幅降低成本：
               </p>
@@ -232,7 +232,7 @@ const EnergyRentalDetailPage = () => {
                 <li>资产管理：在多个钱包之间转移资产</li>
               </ul>
 
-              <h3 className="text-2xl font-bold text-slate-900 mt-8 mb-4">2. 商户平台</h3>
+              <h3 className="text-lg font-bold text-slate-900 mt-8 mb-4">2. 商户平台</h3>
               <p>
                 如果您运营电商、游戏或其他平台，需要为用户处理大量转账：
               </p>
@@ -243,7 +243,7 @@ const EnergyRentalDetailPage = () => {
                 <li>员工工资：使用 USDT 发放工资</li>
               </ul>
 
-              <h3 className="text-2xl font-bold text-slate-900 mt-8 mb-4">3. 交易所和钱包</h3>
+              <h3 className="text-lg font-bold text-slate-900 mt-8 mb-4">3. 交易所和钱包</h3>
               <p>
                 大型平台每天需要处理数千笔转账，能量租赁可以显著降低运营成本：
               </p>
@@ -254,7 +254,7 @@ const EnergyRentalDetailPage = () => {
                 <li>跨链桥接：支持资产跨链转移</li>
               </ul>
 
-              <h3 className="text-2xl font-bold text-slate-900 mt-8 mb-4">4. DeFi 协议</h3>
+              <h3 className="text-lg font-bold text-slate-900 mt-8 mb-4">4. DeFi 协议</h3>
               <p>
                 DeFi 协议需要频繁与智能合约交互，能量消耗巨大：
               </p>
@@ -266,9 +266,9 @@ const EnergyRentalDetailPage = () => {
               </ul>
             </div>
 
-            <h2 className="text-3xl font-black text-slate-900 mb-6 mt-12">实际案例</h2>
-            <div className="prose prose-lg text-slate-600 space-y-4">
-              <div className="bg-slate-50 rounded-xl p-6 my-6">
+            <h2 className="text-xl font-bold text-slate-900 mb-6 mt-6">实际案例</h2>
+            <div className="prose prose-sm text-slate-600 space-y-4">
+              <div className="bg-slate-50 rounded-lg p-4 my-6">
                 <h3 className="text-xl font-bold text-slate-900 mb-3">案例 1：电商平台批量提现</h3>
                 <p className="text-slate-600 mb-3">
                   某跨境电商平台每天需要为 500 个商户处理 USDT 提现。使用能量租赁后，
@@ -279,7 +279,7 @@ const EnergyRentalDetailPage = () => {
                 </p>
               </div>
 
-              <div className="bg-slate-50 rounded-xl p-6 my-6">
+              <div className="bg-slate-50 rounded-lg p-4 my-6">
                 <h3 className="text-xl font-bold text-slate-900 mb-3">案例 2：交易所热钱包管理</h3>
                 <p className="text-slate-600 mb-3">
                   某中型交易所每天需要处理 2000 笔 USDT 充提。通过租赁能量，
@@ -290,7 +290,7 @@ const EnergyRentalDetailPage = () => {
                 </p>
               </div>
 
-              <div className="bg-slate-50 rounded-xl p-6 my-6">
+              <div className="bg-slate-50 rounded-lg p-4 my-6">
                 <h3 className="text-xl font-bold text-slate-900 mb-3">案例 3：DeFi 协议用户补贴</h3>
                 <p className="text-slate-600 mb-3">
                   某 DeFi 协议为用户补贴手续费，每天约 1000 笔交易。使用能量租赁后，
@@ -302,7 +302,7 @@ const EnergyRentalDetailPage = () => {
               </div>
             </div>
 
-            <h2 className="text-3xl font-black text-slate-900 mb-6 mt-12">常见问题</h2>
+            <h2 className="text-xl font-bold text-slate-900 mb-6 mt-6">常见问题</h2>
             <div className="space-y-6">
               <div className="border-l-4 border-orange-500 pl-6">
                 <h3 className="text-xl font-bold text-slate-900 mb-2">能量租赁后多久到账？</h3>
@@ -354,8 +354,8 @@ const EnergyRentalDetailPage = () => {
               </div>
             </div>
 
-            <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-2xl p-8 mt-12">
-              <h3 className="text-2xl font-bold text-slate-900 mb-4">立即开始节省手续费</h3>
+            <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-4 mt-6">
+              <h3 className="text-lg font-bold text-slate-900 mb-4">立即开始节省手续费</h3>
               <p className="text-slate-600 mb-6">
                 能量租赁是降低 USDT 转账成本的最佳方案。立即注册，享受首次租赁优惠。
                 查看我们的 <button onClick={() => navigate('/guides/beginner')} className="text-orange-600 hover:underline font-semibold">新手教程</button> 了解如何使用，
@@ -363,7 +363,7 @@ const EnergyRentalDetailPage = () => {
               </p>
               <button 
                 onClick={() => navigate('/energy-rental')}
-                className="bg-orange-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-orange-600 transition-all"
+                className="bg-orange-500 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-orange-600 transition-all"
               >
                 立即租赁能量
               </button>
@@ -372,12 +372,12 @@ const EnergyRentalDetailPage = () => {
         </div>
       </section>
 
-      <section className="py-16 bg-gradient-to-br from-orange-500 to-red-600 text-white">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <h2 className="text-4xl font-black mb-6">立即租赁能量，降低 90% 手续费</h2>
+      <section className="py-8 bg-gradient-to-br from-orange-500 to-red-600 text-white">
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <h2 className="text-xl font-bold mb-6">立即租赁能量，降低 90% 手续费</h2>
           <button 
             onClick={() => navigate('/energy-rental')}
-            className="bg-white text-orange-600 px-10 py-4 rounded-2xl font-black hover:bg-orange-50 transition-all shadow-xl"
+            className="bg-white text-orange-600 px-4 py-2 rounded-lg font-bold text-sm hover:bg-orange-50 transition-all shadow-sm"
           >
             开始租赁
           </button>

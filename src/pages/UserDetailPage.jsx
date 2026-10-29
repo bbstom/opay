@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, User, Mail, Calendar, Shield, Activity, DollarSign, Package } from 'lucide-react';
-import axios from 'axios';
+import axios from '../api/client';
 import AdminLayout from '../components/AdminLayout';
 
 export default function UserDetailPage() {
@@ -18,10 +18,7 @@ export default function UserDetailPage() {
 
   const fetchUserDetail = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`/api/users/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await axios.get(`/api/users/${userId}`);
       
       // API 返回的数据结构：{ user, orders, stats }
       setUser(response.data.user);
@@ -41,12 +38,7 @@ export default function UserDetailPage() {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.patch(
-        `/api/users/${userId}/status`,
-        { status: newStatus },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await axios.patch(`/api/users/${userId}/status`, { status: newStatus });
       fetchUserDetail();
       alert('操作成功');
     } catch (error) {
@@ -61,12 +53,7 @@ export default function UserDetailPage() {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.patch(
-        `/api/users/${userId}/role`,
-        { role: newRole },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await axios.patch(`/api/users/${userId}/role`, { role: newRole });
       fetchUserDetail();
       alert('操作成功');
     } catch (error) {
@@ -108,8 +95,8 @@ export default function UserDetailPage() {
         </button>
 
         {/* 用户基本信息 */}
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 mb-4">
+          <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
             <User size={24} />
             用户详情
           </h2>
@@ -240,7 +227,7 @@ export default function UserDetailPage() {
               <Package className="text-blue-500" size={24} />
               <div className="text-sm text-gray-500">总订单数</div>
             </div>
-            <div className="text-3xl font-bold">{stats?.totalOrders || 0}</div>
+            <div className="text-xl font-bold">{stats?.totalOrders || 0}</div>
           </div>
 
           <div className="bg-white rounded-lg shadow p-6">
@@ -248,7 +235,7 @@ export default function UserDetailPage() {
               <Package className="text-green-500" size={24} />
               <div className="text-sm text-gray-500">完成订单</div>
             </div>
-            <div className="text-3xl font-bold text-green-600">
+            <div className="text-xl font-bold text-green-600">
               {stats?.completedOrders || 0}
             </div>
           </div>
@@ -258,7 +245,7 @@ export default function UserDetailPage() {
               <DollarSign className="text-purple-500" size={24} />
               <div className="text-sm text-gray-500">总交易额</div>
             </div>
-            <div className="text-3xl font-bold text-purple-600">
+            <div className="text-xl font-bold text-purple-600">
               ¥{(stats?.totalAmount || 0).toFixed(2)}
             </div>
           </div>

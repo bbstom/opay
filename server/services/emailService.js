@@ -357,6 +357,81 @@ class EmailService {
       return { success: false, message: error.message };
     }
   }
+  async sendRegisterCodeEmail(email, code, settings) {
+    try {
+      if (!settings || !settings.smtpHost || !settings.smtpUser) {
+        return { success: false, message: '邮件服务未配置' };
+      }
+
+      const siteName = settings.smtpFromName || settings.siteName || '可可代付';
+      const transporter = nodemailer.createTransport({
+        host: settings.smtpHost,
+        port: settings.smtpPort || 465,
+        secure: settings.smtpSecure !== false,
+        auth: {
+          user: settings.smtpUser,
+          pass: settings.smtpPass
+        }
+      });
+
+      await transporter.sendMail({
+        from: `"${siteName}" <${settings.smtpFromEmail || settings.smtpUser}>`,
+        to: email,
+        subject: `【${siteName}】注册验证码`,
+        html: `
+          <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#334155;">
+            <h2 style="margin:0 0 12px;color:#0ea5e9;">注册验证码</h2>
+            <p>您正在注册 ${siteName} 账户，验证码 10 分钟内有效：</p>
+            <p style="font-size:32px;letter-spacing:8px;font-weight:700;color:#0f172a;margin:24px 0;">${code}</p>
+            <p style="color:#64748b;font-size:13px;">如非本人操作，请忽略此邮件。</p>
+          </div>
+        `
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error('发送注册验证码失败:', error);
+      return { success: false, message: '验证码发送失败' };
+    }
+  }
+
+  async sendResetCodeEmail(email, code, settings) {
+    try {
+      if (!settings || !settings.smtpHost || !settings.smtpUser) {
+        return { success: false, message: '邮件服务未配置' };
+      }
+
+      const siteName = settings.smtpFromName || settings.siteName || '可可代付';
+      const transporter = nodemailer.createTransport({
+        host: settings.smtpHost,
+        port: settings.smtpPort || 465,
+        secure: settings.smtpSecure !== false,
+        auth: {
+          user: settings.smtpUser,
+          pass: settings.smtpPass
+        }
+      });
+
+      await transporter.sendMail({
+        from: `"${siteName}" <${settings.smtpFromEmail || settings.smtpUser}>`,
+        to: email,
+        subject: `【${siteName}】重置密码验证码`,
+        html: `
+          <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#334155;">
+            <h2 style="margin:0 0 12px;color:#0ea5e9;">重置密码</h2>
+            <p>您正在重置 ${siteName} 账户密码，验证码 10 分钟内有效：</p>
+            <p style="font-size:32px;letter-spacing:8px;font-weight:700;color:#0f172a;margin:24px 0;">${code}</p>
+            <p style="color:#64748b;font-size:13px;">如非本人操作，请忽略此邮件。</p>
+          </div>
+        `
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error('发送重置验证码失败:', error);
+      return { success: false, message: '验证码发送失败' };
+    }
+  }
 }
 
 module.exports = new EmailService();

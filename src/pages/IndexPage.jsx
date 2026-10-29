@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShieldCheck, Zap, ArrowRight, Clock } from 'lucide-react';
-import axios from 'axios';
+import axios from '../api/client';
 
 const IndexPage = () => {
   const navigate = useNavigate();
@@ -32,53 +32,52 @@ const IndexPage = () => {
 
   return (
     <div className="animate-in fade-in duration-700">
-      <section className="relative pt-32 pb-20 overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[600px] bg-gradient-to-b from-cyan-50/50 to-transparent -z-10"></div>
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-8">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white rounded-full border border-cyan-100 shadow-sm">
+      <section className="relative pt-16 pb-8 overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[280px] bg-gradient-to-b from-cyan-50/50 to-transparent -z-10"></div>
+        <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+          <div className="space-y-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white rounded-full border border-cyan-100 shadow-sm">
               <span className="text-[11px] font-black text-cyan-600 uppercase tracking-widest">Enterprise Ready</span>
               <div className="w-1 h-1 bg-slate-300 rounded-full"></div>
               <span className="text-[11px] font-medium text-slate-500">已为超过 12,000 名用户提供服务</span>
             </div>
-            <h1 className="text-5xl lg:text-7xl font-black text-slate-900 leading-[1.05] tracking-tight">
+            <h1 className="text-2xl lg:text-3xl font-black text-slate-900 leading-[1.15] tracking-tight">
               让链上支付 <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-500 to-blue-600">像发红包一样简单</span>
             </h1>
-            <p className="text-lg text-slate-500 font-medium max-w-xl leading-relaxed">
+            <p className="text-sm text-slate-500 font-medium max-w-xl">
               {siteName} {siteDescription}
             </p>
-            <div className="flex flex-wrap gap-4 pt-4">
-              <button onClick={() => navigate('/pay')} className="bg-cyan-500 text-white px-8 py-4 rounded-2xl font-black flex items-center gap-2 hover:bg-cyan-600 transition-all shadow-xl shadow-cyan-100">
-                USDT 代付 <ArrowRight size={20} />
+            <div className="flex flex-wrap gap-2.5 pt-1">
+              <button onClick={() => navigate('/pay')} className="bg-cyan-500 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-1.5 hover:bg-cyan-600 transition-all text-sm">
+                USDT 代付 <ArrowRight size={15} />
               </button>
-              <button onClick={() => navigate('/pay-trx')} className="bg-white border-2 border-cyan-500 text-cyan-600 px-8 py-4 rounded-2xl font-black hover:bg-cyan-50 transition-all">
+              <button onClick={() => navigate('/pay-trx')} className="bg-white border border-cyan-500 text-cyan-600 px-4 py-2 rounded-lg font-bold hover:bg-cyan-50 transition-all text-sm">
                 TRX 代付
               </button>
             </div>
           </div>
           <div className="relative hidden lg:block">
-            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 blur-3xl rounded-full animate-pulse"></div>
-            <div className="relative bg-white/40 backdrop-blur-xl border border-white p-4 rounded-[40px] shadow-2xl">
-              <img src={heroImage} alt="Dashboard Preview" className="rounded-[32px] shadow-sm grayscale-[0.5] opacity-90" />
+            <div className="relative bg-white/40 backdrop-blur-xl border border-white p-2 rounded-xl shadow-lg">
+              <img src={heroImage} alt="Dashboard Preview" className="rounded-lg shadow-sm grayscale-[0.5] opacity-90" />
             </div>
           </div>
         </div>
       </section>
 
-      <section className="py-24 bg-white border-y border-slate-100">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-12">
+      <section className="py-8 bg-white border-y border-slate-100">
+        <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
-            { title: "全自动结算", icon: <Zap className="text-amber-500" />, desc: "支付回调后 30 秒内自动触发链上转账，全天候 24/7 无间断服务。" },
-            { title: "银行级风控", icon: <ShieldCheck className="text-blue-500" />, desc: "多签名冷钱包存储技术，所有代付流水实时监控，确保资金链路绝对安全。" },
-            { title: "极速到账", icon: <Clock className="text-cyan-500" />, desc: "自主研发的节点加速技术，确保您的每一笔代付都在下一个区块确认。" },
+            { title: "全自动结算", icon: <Zap className="text-amber-500" size={18} />, desc: "支付回调后 30 秒内自动触发链上转账，全天候 24/7 无间断服务。" },
+            { title: "银行级风控", icon: <ShieldCheck className="text-blue-500" size={18} />, desc: "多签名冷钱包存储技术，所有代付流水实时监控，确保资金链路绝对安全。" },
+            { title: "极速到账", icon: <Clock className="text-cyan-500" size={18} />, desc: "自主研发的节点加速技术，确保您的每一笔代付都在下一个区块确认。" },
           ].map((item, i) => (
-            <div key={i} className="space-y-4 text-center md:text-left">
-              <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto md:mx-0">
+            <div key={i} className="space-y-2 text-center md:text-left">
+              <div className="w-9 h-9 bg-slate-50 rounded-lg flex items-center justify-center mx-auto md:mx-0">
                 {item.icon}
               </div>
-              <h3 className="text-xl font-black text-slate-800">{item.title}</h3>
-              <p className="text-sm text-slate-500 font-medium leading-relaxed">{item.desc}</p>
+              <h3 className="text-sm font-bold text-slate-800">{item.title}</h3>
+              <p className="text-xs text-slate-500 font-medium">{item.desc}</p>
             </div>
           ))}
         </div>
@@ -86,9 +85,9 @@ const IndexPage = () => {
 
       {/* 主页底部 - 3x3 广告位 */}
       {getAdsByPosition('home-bottom').length > 0 && (
-        <section className="py-16 bg-slate-50">
-          <div className="max-w-7xl mx-auto px-6">
-            <h2 className="text-2xl font-black text-slate-800 mb-8">合作伙伴</h2>
+        <section className="py-8 bg-slate-50">
+          <div className="max-w-7xl mx-auto px-4">
+            <h2 className="text-base font-bold text-slate-800 mb-4">合作伙伴</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {getAdsByPosition('home-bottom').slice(0, 9).map((ad) => (
                 <div 

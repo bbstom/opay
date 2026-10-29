@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ArrowDownUp, Copy, RefreshCw } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import axios from 'axios';
+import axios from '../api/client';
 
 const SwapPage = () => {
   const [rate, setRate] = useState(null);
@@ -22,23 +22,10 @@ const SwapPage = () => {
       // 获取汇率
       const { data: rateData } = await axios.get('/api/swap/rate');
       setRate(rateData);
+      setWalletAddress(rateData.receiveAddress || '');
 
-      // 获取闪兑钱包地址和重要提示
       const { data: settingsData } = await axios.get('/api/settings/public');
       setSwapNotice(settingsData.swapNotice || '');
-      
-      // 从闪兑钱包配置中获取第一个启用的钱包地址
-      if (settingsData.swapWallets) {
-        try {
-          const wallets = JSON.parse(settingsData.swapWallets);
-          const enabledWallet = wallets.find(w => w.enabled);
-          if (enabledWallet) {
-            setWalletAddress(enabledWallet.address);
-          }
-        } catch (e) {
-          console.error('解析闪兑钱包失败:', e);
-        }
-      }
     } catch (error) {
       console.error('获取闪兑信息失败:', error);
     } finally {
@@ -63,7 +50,7 @@ const SwapPage = () => {
 
   if (loading) {
     return (
-      <div className="bg-gradient-to-br from-slate-50 to-blue-50 pt-24 pb-8">
+      <div className="bg-gradient-to-br from-slate-50 to-blue-50 pt-16 pb-6">
         <div className="max-w-2xl mx-auto px-6 text-center">
           <p className="text-slate-600">加载中...</p>
         </div>
@@ -72,7 +59,7 @@ const SwapPage = () => {
   }
 
   return (
-    <div className="bg-gradient-to-br from-slate-50 to-blue-50 pt-24 pb-8">
+    <div className="bg-gradient-to-br from-slate-50 to-blue-50 pt-16 pb-6">
       <div className="max-w-4xl mx-auto px-4 w-full">
         {/* 标题 - 更紧凑 */}
         <div className="text-center mb-3">

@@ -60,8 +60,7 @@ const swapOrderSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 });
 
-// 创建索引
-swapOrderSchema.index({ orderNumber: 1 });
+// 索引（orderNumber 已 unique，不再重复）
 swapOrderSchema.index({ userAddress: 1 });
 swapOrderSchema.index({ systemWalletAddress: 1 });
 swapOrderSchema.index({ status: 1 });

@@ -26,6 +26,9 @@ const settingsSchema = new mongoose.Schema({
   energyMinAmount: { type: Number, default: 10 }, // 最小金额
   energyValidityHours: { type: Number, default: 24 }, // 能量有效期（小时）
   energyNotice: { type: String, default: '仅支持 TRX 转账\n最小金额：10 TRX\n能量有效期：24小时' }, // 重要提示
+  trxDepositEnabled: { type: Boolean, default: true },
+  trxDepositAddress: { type: String, default: '' },
+  trxDepositMin: { type: Number, default: 1 },
   swapNotice: { type: String, default: '必须使用 TRC20 网络\n最小金额：10 USDT\n汇率实时变动' }, // 闪兑重要提示
   systemStartTime: { type: Date, default: () => new Date('2024-01-01T00:00:00') }, // 系统运行起始时间
   homeHeroImage: { type: String, default: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=2832&auto=format&fit=crop' }, // 主页右侧展示图片
@@ -137,6 +140,12 @@ const settingsSchema = new mongoose.Schema({
   smtpPass: { type: String, default: '' },
   smtpFromName: { type: String, default: '可可代付' },
   smtpFromEmail: { type: String, default: '' },
+
+  // Telegram Bot（后台配置，Token 不走 .env）
+  telegramBots: {
+    type: String,
+    default: JSON.stringify([])
+  },
   
   // 闪兑配置
   swapEnabled: { type: Boolean, default: true }, // 是否启用闪兑功能
@@ -158,6 +167,15 @@ const settingsSchema = new mongoose.Schema({
   blogImageMaxHeight: { type: String, default: '500px' }, // 博客图片最大高度（如：500px, 800px）
   blogCoverMaxHeight: { type: String, default: '500px' }, // 博客封面图最大高度（如：500px, 600px）
   
+  // 邀请 / 签到 / 提现
+  rewardEnabled: { type: Boolean, default: true },
+  checkinEnabled: { type: Boolean, default: true },
+  checkinTrx: { type: Number, default: 1 },
+  inviteSignupTrx: { type: Number, default: 5 },
+  consumeRewardUsdtPercent: { type: Number, default: 5 },
+  withdrawMinUsdt: { type: Number, default: 10 },
+  withdrawFeeUsdt: { type: Number, default: 0 },
+
   // 工作台警告弹窗配置
   workspaceAlertEnabled: { type: Boolean, default: false }, // 是否启用警告弹窗
   workspaceAlertTitle: { type: String, default: '重要提示' }, // 弹窗标题

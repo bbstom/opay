@@ -1,6 +1,6 @@
 const express = require('express');
 const FAQ = require('../models/FAQ');
-const { auth } = require('../middleware/auth');
+const { auth, adminAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -77,11 +77,8 @@ router.get('/:id', async (req, res) => {
  * GET /api/faq/admin/list
  * 获取所有FAQ（管理员）
  */
-router.get('/admin/list', auth, async (req, res) => {
+router.get('/admin/list', auth, adminAuth, async (req, res) => {
   try {
-    if (!req.user || req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
     
     const faqs = await FAQ.find().sort({ order: 1, createdAt: -1 });
     
@@ -99,11 +96,8 @@ router.get('/admin/list', auth, async (req, res) => {
  * POST /api/faq
  * 创建FAQ（管理员）
  */
-router.post('/', auth, async (req, res) => {
+router.post('/', auth, adminAuth, async (req, res) => {
   try {
-    if (!req.user || req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
     
     const { question, answer, category, order, enabled } = req.body;
     
@@ -134,11 +128,8 @@ router.post('/', auth, async (req, res) => {
  * PUT /api/faq/:id
  * 更新FAQ（管理员）
  */
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', auth, adminAuth, async (req, res) => {
   try {
-    if (!req.user || req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
     
     const { question, answer, category, order, enabled } = req.body;
     
@@ -170,11 +161,8 @@ router.put('/:id', auth, async (req, res) => {
  * DELETE /api/faq/:id
  * 删除FAQ（管理员）
  */
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', auth, adminAuth, async (req, res) => {
   try {
-    if (!req.user || req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
     
     const faq = await FAQ.findByIdAndDelete(req.params.id);
     

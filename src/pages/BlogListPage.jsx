@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { BookOpen, Calendar, Eye, Tag, Search } from 'lucide-react';
-import axios from 'axios';
+import axios from '../api/client';
 import SEOHead from '../components/SEOHead';
 
 const BlogListPage = () => {
@@ -102,15 +102,15 @@ const BlogListPage = () => {
       />
 
       {/* Hero */}
-      <section className="relative pt-20 pb-12">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[200px] bg-gradient-to-b from-blue-50/50 to-transparent -z-10"></div>
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-8">
-            <div className="w-14 h-14 bg-gradient-to-tr from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-              <BookOpen className="text-white" size={28} />
+      <section className="relative pt-16 pb-8">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[160px] bg-gradient-to-b from-blue-50/50 to-transparent -z-10"></div>
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-3">
+            <div className="w-12 h-12 bg-gradient-to-tr from-blue-500 to-cyan-600 rounded-lg flex items-center justify-center mx-auto mb-2 shadow-lg">
+              <BookOpen className="text-white" size={24} />
             </div>
-            <h1 className="text-4xl font-black text-slate-900 mb-3">可可代付博客</h1>
-            <p className="text-lg text-slate-600">区块链支付教程、行业资讯和最佳实践</p>
+            <h1 className="text-2xl font-black text-slate-900 mb-1">可可代付博客</h1>
+            <p className="text-sm text-slate-600">区块链支付教程、行业资讯和最佳实践</p>
           </div>
 
           {/* 搜索和筛选 */}
@@ -123,7 +123,7 @@ const BlogListPage = () => {
                   name="q"
                   defaultValue={searchQuery}
                   placeholder="搜索文章..."
-                  className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                  className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
                 />
               </div>
             </form>
@@ -132,7 +132,7 @@ const BlogListPage = () => {
             <div className="flex flex-wrap gap-2 justify-center">
               <button
                 onClick={() => handleCategoryChange('all')}
-                className={`px-5 py-2 rounded-lg font-bold text-sm transition-all ${
+                className={`px-4 py-1.5 rounded-lg font-bold text-sm transition-all ${
                   selectedCategory === 'all'
                     ? 'bg-blue-500 text-white shadow-lg'
                     : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
@@ -144,7 +144,7 @@ const BlogListPage = () => {
                 <button
                   key={category._id}
                   onClick={() => handleCategoryChange(category.slug)}
-                  className={`px-5 py-2 rounded-lg font-bold text-sm transition-all ${
+                  className={`px-4 py-1.5 rounded-lg font-bold text-sm transition-all ${
                     selectedCategory === category.slug
                       ? 'bg-blue-500 text-white shadow-lg'
                       : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
@@ -160,7 +160,7 @@ const BlogListPage = () => {
 
       {/* 文章列表 */}
       <section className="py-12">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-7xl mx-auto px-4">
           {loading ? (
             <div className="text-center py-12">
               <div className="inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
@@ -177,7 +177,7 @@ const BlogListPage = () => {
                   <article
                     key={blog._id}
                     onClick={() => navigate(`/blog/${blog.slug}`)}
-                    className="bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-lg transition-all cursor-pointer group"
+                    className="bg-white rounded-lg border border-slate-200 overflow-hidden hover:shadow-lg transition-all cursor-pointer group"
                   >
                     <div className="aspect-video bg-gradient-to-br from-blue-100 to-cyan-100 overflow-hidden">
                       {blog.coverImage ? (
@@ -192,7 +192,7 @@ const BlogListPage = () => {
                         </div>
                       )}
                     </div>
-                    <div className="p-6">
+                    <div className="p-4">
                       <div className="flex items-center gap-2 mb-3">
                         <span className="px-3 py-1 bg-blue-50 text-blue-600 text-xs font-bold rounded-full">
                           {blog.category?.name}
@@ -221,7 +221,7 @@ const BlogListPage = () => {
 
               {/* 分页 */}
               {pagination.pages > 1 && (
-                <div className="flex justify-center gap-2 mt-12">
+                <div className="flex justify-center gap-2 mt-6">
                   <button
                     onClick={() => handlePageChange(pagination.page - 1)}
                     disabled={pagination.page === 1}

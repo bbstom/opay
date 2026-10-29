@@ -1,4 +1,5 @@
 const Payment = require('../models/Payment');
+const { withJobLock } = require('../utils/jobLock');
 
 /**
  * 订单超时检查服务
@@ -46,6 +47,7 @@ class OrderTimeoutService {
    * 检查并标记超时订单
    */
   async checkTimeoutOrders() {
+    await withJobLock('order-timeout', 4 * 60 * 1000, async () => {
     try {
       const timeoutDate = new Date(Date.now() - this.timeoutMinutes * 60 * 1000);
       
@@ -82,6 +84,7 @@ class OrderTimeoutService {
     } catch (error) {
       console.error('❌ 检查超时订单失败:', error);
     }
+    });
   }
 
   /**

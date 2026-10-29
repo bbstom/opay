@@ -28,7 +28,10 @@ export default defineConfig(({ mode }) => {
     define: {
       // 将环境变量注入到前端代码中
       'process.env.REACT_APP_TELEGRAM_BOT_USERNAME': JSON.stringify(
-        env.REACT_APP_TELEGRAM_BOT_USERNAME || env.TELEGRAM_BOT_USERNAME || 'YourBotUsername'
+        env.REACT_APP_TELEGRAM_BOT_USERNAME
+          || env.TELEGRAM_BOT_USERNAME
+          || (env.TELEGRAM_BOT_USERNAMES || '').split(',')[0].trim()
+          || 'YourBotUsername'
       )
     }
   };

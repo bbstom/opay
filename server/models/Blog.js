@@ -69,8 +69,7 @@ const blogSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// 索引
-blogSchema.index({ slug: 1 });
+// 索引（slug 已 unique，不再重复）
 blogSchema.index({ status: 1, publishedAt: -1 });
 blogSchema.index({ category: 1, status: 1 });
 blogSchema.index({ tags: 1, status: 1 });

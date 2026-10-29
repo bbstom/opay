@@ -1,6 +1,6 @@
 const express = require('express');
 const Ticket = require('../models/Ticket');
-const { auth } = require('../middleware/auth');
+const { auth, adminAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -107,11 +107,8 @@ router.get('/my', auth, async (req, res) => {
  * GET /api/tickets/admin
  * 获取所有工单（管理员）
  */
-router.get('/admin', auth, async (req, res) => {
+router.get('/admin', auth, adminAuth, async (req, res) => {
   try {
-    if (!req.user || req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
     
     const { status, priority, category } = req.query;
     
@@ -225,11 +222,8 @@ router.post('/:id/reply', auth, async (req, res) => {
  * PUT /api/tickets/:id/status
  * 更新工单状态（管理员）
  */
-router.put('/:id/status', auth, async (req, res) => {
+router.put('/:id/status', auth, adminAuth, async (req, res) => {
   try {
-    if (!req.user || req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
     
     const { status } = req.body;
     
@@ -267,11 +261,8 @@ router.put('/:id/status', auth, async (req, res) => {
  * PUT /api/tickets/:id/priority
  * 更新工单优先级（管理员）
  */
-router.put('/:id/priority', auth, async (req, res) => {
+router.put('/:id/priority', auth, adminAuth, async (req, res) => {
   try {
-    if (!req.user || req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
     
     const { priority } = req.body;
     
@@ -303,11 +294,8 @@ router.put('/:id/priority', auth, async (req, res) => {
  * DELETE /api/tickets/:id
  * 删除工单（管理员）
  */
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', auth, adminAuth, async (req, res) => {
   try {
-    if (!req.user || req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
     
     const ticket = await Ticket.findByIdAndDelete(req.params.id);
     

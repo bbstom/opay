@@ -82,9 +82,18 @@ function ipWhitelistCheck(req, res, next) {
     return next();
   }
   
-  const clientIp = req.ip || req.connection.remoteAddress;
-  
-  if (!whitelist.includes(clientIp)) {
+  const normalizeIp = (ip) => {
+    if (!ip) return '';
+    const first = String(ip).split(',')[0].trim();
+    if (first.startsWith('::ffff:')) return first.slice(7);
+    if (first === '::1') return '127.0.0.1';
+    return first;
+  };
+
+  const clientIp = normalizeIp(req.ip || req.socket?.remoteAddress);
+  const allowed = whitelist.map(normalizeIp).filter(Boolean);
+
+  if (!allowed.includes(clientIp)) {
     // 记录未授权访问尝试
     AuditLog.log({
       userId: req.user?.userId || null,
@@ -112,7 +121,10 @@ const rateLimitMap = new Map();
 
 function rateLimit(maxRequests = 100, windowMs = 60000) {
   return (req, res, next) => {
-    const key = req.ip || req.connection.remoteAddress;
+    // 按 IP + 路径前缀隔离，避免全局桶互相挤占
+    const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+    const pathKey = (req.baseUrl || '') + (req.path || '');
+    const key = `${ip}::${pathKey}`;
     const now = Date.now();
     
     if (!rateLimitMap.has(key)) {

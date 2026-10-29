@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import axios from '../api/client';
 import AdminLayout from '../components/AdminLayout';
 
 export default function UserManagePage() {
@@ -17,10 +17,7 @@ export default function UserManagePage() {
 
   const fetchUsers = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('/api/users', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await axios.get('/api/users');
       setUsers(response.data);
       setLoading(false);
     } catch (error) {
@@ -34,10 +31,7 @@ export default function UserManagePage() {
 
   const fetchStats = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('/api/users/stats/overview', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await axios.get('/api/users/stats/overview');
       setStats(response.data);
     } catch (error) {
       console.error('获取统计数据失败:', error);
@@ -50,12 +44,7 @@ export default function UserManagePage() {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.patch(
-        `/api/users/${userId}/status`,
-        { status: newStatus },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await axios.patch(`/api/users/${userId}/status`, { status: newStatus });
       fetchUsers();
       alert('操作成功');
     } catch (error) {
@@ -70,12 +59,7 @@ export default function UserManagePage() {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.patch(
-        `/api/users/${userId}/role`,
-        { role: newRole },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await axios.patch(`/api/users/${userId}/role`, { role: newRole });
       fetchUsers();
       alert('操作成功');
     } catch (error) {
@@ -90,11 +74,7 @@ export default function UserManagePage() {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(
-        `/api/users/${userId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await axios.delete(`/api/users/${userId}`);
       fetchUsers();
       alert('删除成功');
     } catch (error) {
@@ -121,8 +101,8 @@ export default function UserManagePage() {
 
   return (
     <AdminLayout>
-      <div className="max-w-7xl mx-auto px-6 py-8">
-      <h1 className="text-3xl font-bold mb-6">用户管理</h1>
+      <div className="max-w-7xl mx-auto">
+      <h1 className="text-xl font-bold mb-4">用户管理</h1>
 
       {/* 统计卡片 */}
       {stats && (

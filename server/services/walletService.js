@@ -1,7 +1,8 @@
 const Wallet = require('../models/Wallet');
-const { encryptPrivateKey, decryptPrivateKey, getMasterKey } = require('../utils/encryption');
+const { encryptPrivateKey, getMasterKey } = require('../utils/encryption');
 const TronWebModule = require('tronweb');
 const TronWeb = TronWebModule.TronWeb;
+const tronService = require('./tronService');
 
 class WalletService {
   constructor() {
@@ -267,57 +268,12 @@ class WalletService {
         throw new Error('钱包不存在');
       }
 
-      // 解密私钥
-      const privateKey = decryptPrivateKey(wallet.privateKeyEncrypted, this.masterKey);
+      // 查余额不需要私钥
+      await tronService.initialize();
+      const trx = await tronService.getBalance(wallet.address);
+      const usdt = await tronService.getUSDTBalance(wallet.address);
+      const resources = await tronService.tronWeb.trx.getAccountResources(wallet.address);
 
-      // 获取系统配置的 API 节点
-      const Settings = require('../models/Settings');
-      const settings = await Settings.findOne();
-      
-      let apiUrl = 'https://api.trongrid.io';
-      let apiKey = '';
-      
-      if (settings && settings.tronApiNodes) {
-        try {
-          const nodes = JSON.parse(settings.tronApiNodes);
-          const enabledNode = nodes.find(node => node.enabled && node.url);
-          if (enabledNode) {
-            apiUrl = enabledNode.url;
-            apiKey = enabledNode.apiKey || '';
-          }
-        } catch (e) {
-          console.warn('解析 API 节点配置失败，使用默认节点');
-        }
-      }
-
-      // 创建 TronWeb 实例
-      const tronWeb = new TronWeb({
-        fullHost: apiUrl,
-        privateKey: privateKey,
-        headers: apiKey ? { 'TRON-PRO-API-KEY': apiKey } : {}
-      });
-
-      // 获取余额
-      const trxBalance = await tronWeb.trx.getBalance(wallet.address);
-      const trx = trxBalance / 1000000;
-
-      // 获取 USDT 余额
-      const usdtContract = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
-      const contract = await tronWeb.contract().at(usdtContract);
-      const usdtBalance = await contract.balanceOf(wallet.address).call();
-      
-      let usdt = 0;
-      if (typeof usdtBalance === 'object' && usdtBalance.toNumber) {
-        usdt = usdtBalance.toNumber() / 1000000;
-      } else if (typeof usdtBalance === 'object' && usdtBalance.toString) {
-        usdt = parseInt(usdtBalance.toString()) / 1000000;
-      } else {
-        usdt = parseInt(usdtBalance) / 1000000;
-      }
-
-      // 获取资源
-      const resources = await tronWeb.trx.getAccountResources(wallet.address);
-      
       const energyLimit = resources.EnergyLimit || 0;
       const energyUsed = resources.EnergyUsed || 0;
       const energyAvailable = energyLimit - energyUsed;

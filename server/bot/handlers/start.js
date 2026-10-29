@@ -2,6 +2,7 @@ const User = require('../../models/User');
 const Settings = require('../../models/Settings');
 const { getMainKeyboard, getBackKeyboard } = require('../keyboards/main');
 const contentService = require('../services/contentService');
+const rewardService = require('../../services/rewardService');
 
 // /start 命令处理
 async function start(ctx) {
@@ -30,13 +31,14 @@ async function start(ctx) {
 
     // 检查用户是否已存在
     let user = await User.findOne({ telegramId });
+    const inviteCode = rewardService.parseInvitePayload(startPayload);
 
     if (user) {
       // 已有账户，欢迎回来
       ctx.session.user = user;
       
-      // 检查是否有从群组跳转的操作参数
-      if (startPayload && startPayload !== 'start') {
+      // 检查是否有从群组跳转的操作参数（邀请码不当操作处理）
+      if (startPayload && startPayload !== 'start' && !inviteCode) {
         // 先发送欢迎消息
         await ctx.reply(
           `👋 欢迎回来！正在为您执行操作...`,
@@ -85,11 +87,12 @@ async function start(ctx) {
         source: 'telegram',
         role: 'user'
       });
+      await rewardService.afterUserCreated(user, inviteCode);
 
       ctx.session.user = user;
 
       // 检查是否有从群组跳转的操作参数
-      if (startPayload && startPayload !== 'start') {
+      if (startPayload && startPayload !== 'start' && !inviteCode) {
         // 先发送欢迎消息
         await ctx.reply(
           `🎊 欢迎使用 ${siteName}！账户已创建，正在为您执行操作...`,
@@ -161,6 +164,7 @@ async function handleQRLogin(ctx, token, telegramId, username, firstName, lastNa
         source: 'telegram',
         role: 'user'
       });
+      await rewardService.afterUserCreated(user, '');
       console.log('✅ 自动创建用户（扫码登录）:', user.username);
     } else {
       console.log('✅ 用户已存在（扫码登录）:', user.username);
@@ -247,6 +251,7 @@ async function handleLoginConfirm(ctx) {
           source: 'telegram',
           role: 'user'
         });
+        await rewardService.afterUserCreated(user, '');
         console.log('✅ 自动创建用户（登录确认）:', user.username);
       } else {
         // 更新用户信息

@@ -29,8 +29,8 @@ const APIDocPage = () => {
         }}
       />
       {/* 面包屑 */}
-      <div className="bg-white border-b border-slate-200 pt-20">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+      <div className="bg-white border-b border-slate-200 pt-14">
+        <div className="max-w-7xl mx-auto px-4 py-2">
           <div className="flex items-center gap-2 text-sm text-slate-600">
             <button onClick={() => navigate('/')} className="hover:text-cyan-600">首页</button>
             <span>/</span>
@@ -42,18 +42,18 @@ const APIDocPage = () => {
       </div>
 
       {/* Hero */}
-      <section className="relative pt-20 pb-16">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[300px] bg-gradient-to-b from-blue-50/50 to-transparent -z-10"></div>
-        <div className="max-w-7xl mx-auto px-6">
+      <section className="relative pt-6 pb-8">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[180px] bg-gradient-to-b from-blue-50/50 to-transparent -z-10"></div>
+        <div className="max-w-7xl mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white rounded-full border border-blue-100 shadow-sm mb-6">
               <FileText className="w-4 h-4 text-blue-600" />
               <span className="text-xs font-black text-blue-600 uppercase tracking-widest">API Documentation</span>
             </div>
-            <h1 className="text-5xl lg:text-6xl font-black text-slate-900 leading-tight mb-6">
+            <h1 className="text-2xl font-black text-slate-900 leading-tight mb-2">
               API 文档
             </h1>
-            <p className="text-xl text-slate-600 leading-relaxed">
+            <p className="text-sm text-slate-600">
               完整的 API 接入文档，支持多种编程语言，快速集成到您的系统
             </p>
           </div>
@@ -61,33 +61,33 @@ const APIDocPage = () => {
       </section>
 
       {/* API 概述 */}
-      <section className="py-16 bg-white">
-        <div className="max-w-4xl mx-auto px-6">
-          <h2 className="text-3xl font-black text-slate-900 mb-8">API 概述</h2>
+      <section className="py-8 bg-white">
+        <div className="max-w-4xl mx-auto px-4">
+          <h2 className="text-xl font-bold text-slate-900 mb-8">API 概述</h2>
           
-          <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl border border-blue-100 p-8 mb-8">
+          <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg border border-blue-100 p-4 mb-8">
             <p className="text-slate-700 leading-relaxed mb-4">
               我们提供 RESTful API 接口，支持通过 HTTP 请求创建订单、查询订单状态、接收回调通知等操作。
               所有 API 请求都需要进行身份认证，确保数据安全。
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-              <div className="bg-white rounded-xl p-4">
-                <div className="text-2xl font-black text-blue-600 mb-2">RESTful</div>
+              <div className="bg-white rounded-lg p-4">
+                <div className="text-lg font-bold text-blue-600 mb-2">RESTful</div>
                 <div className="text-sm text-slate-600">标准 REST API</div>
               </div>
-              <div className="bg-white rounded-xl p-4">
-                <div className="text-2xl font-black text-blue-600 mb-2">JSON</div>
+              <div className="bg-white rounded-lg p-4">
+                <div className="text-lg font-bold text-blue-600 mb-2">JSON</div>
                 <div className="text-sm text-slate-600">数据格式</div>
               </div>
-              <div className="bg-white rounded-xl p-4">
-                <div className="text-2xl font-black text-blue-600 mb-2">HTTPS</div>
+              <div className="bg-white rounded-lg p-4">
+                <div className="text-lg font-bold text-blue-600 mb-2">HTTPS</div>
                 <div className="text-sm text-slate-600">安全传输</div>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <h3 className="text-xl font-black text-slate-900 mb-4">基础信息</h3>
+          <div className="bg-white rounded-lg border border-slate-200 p-4">
+            <h3 className="text-base font-bold text-slate-900 mb-4">基础信息</h3>
             <div className="space-y-3">
               <div className="flex items-start gap-4">
                 <div className="font-bold text-slate-700 w-32">API 地址：</div>
@@ -111,12 +111,12 @@ const APIDocPage = () => {
       </section>
 
       {/* 认证方式 */}
-      <section className="py-16 bg-slate-50">
-        <div className="max-w-4xl mx-auto px-6">
-          <h2 className="text-3xl font-black text-slate-900 mb-8">认证方式</h2>
+      <section className="py-8 bg-slate-50">
+        <div className="max-w-4xl mx-auto px-4">
+          <h2 className="text-xl font-bold text-slate-900 mb-8">认证方式</h2>
           
-          <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">
-            <h3 className="text-xl font-black text-slate-900 mb-4">获取 API 密钥</h3>
+          <div className="bg-white rounded-lg border border-slate-200 p-4 mb-6">
+            <h3 className="text-base font-bold text-slate-900 mb-4">获取 API 密钥</h3>
             <p className="text-slate-600 mb-4">
               登录后台管理系统，在"个人中心"页面可以查看和管理您的 API 密钥。
             </p>
@@ -129,8 +129,8 @@ const APIDocPage = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <h3 className="text-xl font-black text-slate-900 mb-4">签名算法</h3>
+          <div className="bg-white rounded-lg border border-slate-200 p-4">
+            <h3 className="text-base font-bold text-slate-900 mb-4">签名算法</h3>
             <p className="text-slate-600 mb-4">
               所有 API 请求都需要携带签名参数，签名算法如下：
             </p>
@@ -166,17 +166,17 @@ function generateSign(params, apiKey) {
       </section>
 
       {/* 接口列表 */}
-      <section className="py-16 bg-white">
-        <div className="max-w-4xl mx-auto px-6">
-          <h2 className="text-3xl font-black text-slate-900 mb-8">接口列表</h2>
+      <section className="py-8 bg-white">
+        <div className="max-w-4xl mx-auto px-4">
+          <h2 className="text-xl font-bold text-slate-900 mb-8">接口列表</h2>
           
           {/* 创建订单 */}
-          <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">
+          <div className="bg-white rounded-lg border border-slate-200 p-4 mb-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="bg-green-100 text-green-700 px-3 py-1 rounded-lg text-sm font-black">POST</div>
               <code className="text-lg font-mono">/api/order/create</code>
             </div>
-            <h3 className="text-xl font-black text-slate-900 mb-4">创建订单</h3>
+            <h3 className="text-base font-bold text-slate-900 mb-4">创建订单</h3>
             
             <div className="mb-4">
               <h4 className="font-bold text-slate-900 mb-2">请求参数</h4>
@@ -248,12 +248,12 @@ function generateSign(params, apiKey) {
           </div>
 
           {/* 查询订单 */}
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
+          <div className="bg-white rounded-lg border border-slate-200 p-4">
             <div className="flex items-center gap-3 mb-4">
               <div className="bg-blue-100 text-blue-700 px-3 py-1 rounded-lg text-sm font-black">GET</div>
               <code className="text-lg font-mono">/api/order/query</code>
             </div>
-            <h3 className="text-xl font-black text-slate-900 mb-4">查询订单</h3>
+            <h3 className="text-base font-bold text-slate-900 mb-4">查询订单</h3>
             
             <div className="mb-4">
               <h4 className="font-bold text-slate-900 mb-2">请求参数</h4>
@@ -289,15 +289,15 @@ function generateSign(params, apiKey) {
       </section>
 
       {/* CTA */}
-      <section className="py-16 bg-gradient-to-br from-blue-500 to-cyan-600 text-white">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <h2 className="text-4xl font-black mb-6">需要技术支持？</h2>
-          <p className="text-xl text-blue-50 mb-8">
+      <section className="py-8 bg-gradient-to-br from-blue-500 to-cyan-600 text-white">
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <h2 className="text-xl font-bold mb-6">需要技术支持？</h2>
+          <p className="text-sm text-blue-50 mb-4">
             我们的技术团队随时为您提供帮助
           </p>
           <button 
             onClick={() => navigate('/about/contact')}
-            className="bg-white text-blue-600 px-10 py-4 rounded-2xl font-black hover:bg-blue-50 transition-all shadow-xl"
+            className="bg-white text-blue-600 px-4 py-2 rounded-lg font-bold text-sm hover:bg-blue-50 transition-all shadow-sm"
           >
             联系我们
           </button>

@@ -266,7 +266,18 @@ walletSchema.statics.getHealthyWallets = function() {
 };
 
 // 配置
-walletSchema.set('toJSON', { virtuals: true });
-walletSchema.set('toObject', { virtuals: true });
+const stripWalletSecrets = (_doc, ret) => {
+  delete ret.privateKeyEncrypted;
+  return ret;
+};
+
+walletSchema.set('toJSON', {
+  virtuals: true,
+  transform: stripWalletSecrets
+});
+walletSchema.set('toObject', {
+  virtuals: true,
+  transform: stripWalletSecrets
+});
 
 module.exports = mongoose.model('Wallet', walletSchema);

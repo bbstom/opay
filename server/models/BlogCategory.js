@@ -26,8 +26,7 @@ const blogCategorySchema = new mongoose.Schema({
   timestamps: true
 });
 
-// 索引
-blogCategorySchema.index({ slug: 1 });
+// 索引（slug 已 unique，不再重复）
 blogCategorySchema.index({ order: 1 });
 
 module.exports = mongoose.model('BlogCategory', blogCategorySchema);

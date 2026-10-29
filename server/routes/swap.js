@@ -4,7 +4,7 @@ const TronWeb = TronWebModule.TronWeb || TronWebModule;
 const SwapOrder = require('../models/SwapOrder');
 const Wallet = require('../models/Wallet');
 const swapService = require('../services/swapService');
-const { auth } = require('../middleware/auth');
+const { auth, adminAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -28,7 +28,8 @@ router.get('/rate', async (req, res) => {
       rate: rateInfo.rate,
       baseRate: rateInfo.baseRate,
       markup: rateInfo.markup,
-      mode: rateInfo.mode
+      mode: rateInfo.mode,
+      receiveAddress: rateInfo.receiveAddress || ''
     });
   } catch (error) {
     console.error('获取闪兑汇率失败:', error);
@@ -199,12 +200,8 @@ router.get('/my-orders', auth, async (req, res) => {
  * GET /api/swap/admin/orders
  * 获取所有闪兑订单（管理员）
  */
-router.get('/admin/orders', auth, async (req, res) => {
+router.get('/admin/orders', auth, adminAuth, async (req, res) => {
   try {
-    if (!req.user || req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const { status, page = 1, limit = 50 } = req.query;
 
     const filter = {};
@@ -254,12 +251,8 @@ router.get('/admin/orders', auth, async (req, res) => {
  * POST /api/swap/admin/retry/:orderNumber
  * 重试失败的订单（管理员）
  */
-router.post('/admin/retry/:orderNumber', auth, async (req, res) => {
+router.post('/admin/retry/:orderNumber', auth, adminAuth, async (req, res) => {
   try {
-    if (!req.user || req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const { orderNumber } = req.params;
 
     const order = await SwapOrder.findOne({ orderNumber });
@@ -301,12 +294,8 @@ router.post('/admin/retry/:orderNumber', auth, async (req, res) => {
  * POST /api/swap/admin/add-wallet
  * 添加闪兑钱包（管理员）
  */
-router.post('/admin/add-wallet', auth, async (req, res) => {
+router.post('/admin/add-wallet', auth, adminAuth, async (req, res) => {
   try {
-    if (!req.user || req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const { name, privateKey, priority } = req.body;
 
     if (!name || !privateKey) {
@@ -389,12 +378,8 @@ router.post('/admin/add-wallet', auth, async (req, res) => {
  * POST /api/swap/admin/toggle-wallet
  * 切换闪兑钱包启用状态（管理员）
  */
-router.post('/admin/toggle-wallet', auth, async (req, res) => {
+router.post('/admin/toggle-wallet', auth, adminAuth, async (req, res) => {
   try {
-    if (!req.user || req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const { walletId } = req.body;
 
     const Settings = require('../models/Settings');
@@ -436,12 +421,8 @@ router.post('/admin/toggle-wallet', auth, async (req, res) => {
  * POST /api/swap/admin/delete-wallet
  * 删除闪兑钱包（管理员）
  */
-router.post('/admin/delete-wallet', auth, async (req, res) => {
+router.post('/admin/delete-wallet', auth, adminAuth, async (req, res) => {
   try {
-    if (!req.user || req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const { walletId } = req.body;
 
     const Settings = require('../models/Settings');
@@ -482,12 +463,8 @@ router.post('/admin/delete-wallet', auth, async (req, res) => {
  * GET /api/swap/admin/wallet-stats/:walletId
  * 获取闪兑钱包统计信息（管理员）
  */
-router.get('/admin/wallet-stats/:walletId', auth, async (req, res) => {
+router.get('/admin/wallet-stats/:walletId', auth, adminAuth, async (req, res) => {
   try {
-    if (!req.user || req.user.role !== 'admin') {
-      return res.status(403).json({ error: '无权限' });
-    }
-
     const { walletId } = req.params;
 
     // 获取钱包信息
