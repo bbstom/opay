@@ -67,12 +67,6 @@ export const AuthProvider = ({ children }) => {
     return data;
   };
 
-  const telegramWebAppLogin = async (initData) => {
-    const { data } = await api.post('/api/auth/telegram-webapp', { initData });
-    if (data?.user && !data.requiresTwoFactor) setUser(data.user);
-    return data;
-  };
-
   const logout = async () => {
     try {
       await api.post('/api/auth/logout');
@@ -96,7 +90,6 @@ export const AuthProvider = ({ children }) => {
       sendResetCode,
       resetPassword,
       telegramLogin,
-      telegramWebAppLogin,
       logout,
       updateUser,
       loading

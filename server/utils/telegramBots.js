@@ -70,52 +70,6 @@ const hmacTelegramPayload = (payload, botToken) => {
 const telegramAuthHashMatches = (payload, tokens) =>
   (tokens || []).some((token) => token && hmacTelegramPayload(payload, token) === payload.hash);
 
-const timingSafeEqualHex = (left, right) => {
-  if (!left || !right || left.length !== right.length) return false;
-  try {
-    return crypto.timingSafeEqual(Buffer.from(left, 'utf8'), Buffer.from(right, 'utf8'));
-  } catch {
-    return false;
-  }
-};
-
-const parseTelegramInitData = (initData) => {
-  const params = new URLSearchParams(String(initData || ''));
-  const hash = params.get('hash') || '';
-  params.delete('hash');
-  const dataCheckString = [...params.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([key, value]) => `${key}=${value}`)
-    .join('\n');
-  let user = null;
-  try {
-    const raw = params.get('user');
-    user = raw ? JSON.parse(raw) : null;
-  } catch {
-    user = null;
-  }
-  return {
-    hash,
-    dataCheckString,
-    user,
-    authDate: Number(params.get('auth_date') || 0)
-  };
-};
-
-const hmacTelegramWebApp = (dataCheckString, botToken) => {
-  const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
-  return crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
-};
-
-const telegramWebAppHashMatches = (initData, tokens) => {
-  const parsed = parseTelegramInitData(initData);
-  if (!parsed.hash) return { ok: false, parsed };
-  const ok = (tokens || []).some(
-    (token) => token && timingSafeEqualHex(hmacTelegramWebApp(parsed.dataCheckString, token), parsed.hash)
-  );
-  return { ok, parsed };
-};
-
 module.exports = {
   parseTelegramBots,
   normalizeBotUsername,
@@ -126,7 +80,5 @@ module.exports = {
   getPrimaryTelegramBot,
   fingerprintTelegramBots,
   hmacTelegramPayload,
-  telegramAuthHashMatches,
-  parseTelegramInitData,
-  telegramWebAppHashMatches
+  telegramAuthHashMatches
 };

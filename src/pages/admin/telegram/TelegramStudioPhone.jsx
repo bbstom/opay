@@ -19,14 +19,6 @@ let lineSeq = 0;
 const uid = () => `tg-line-${++lineSeq}`;
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const TMA_INTRO =
-  `💰 <b>USDT 代付</b><br/><br/>点下方按钮打开代付页面，填写地址和数量即可。<br/>也可以继续在对话里下单。`;
-
-const TMA_BUTTONS = [
-  { text: '打开 USDT 代付', type: 'web_app', data: 'tma_pay', _index: 9001 },
-  { text: '对话里下单', type: 'callback', data: 'payment_usdt_chat', _index: 9002 }
-];
-
 const nextFromInline = (btn, contentsByKey, welcomeKey) => {
   const data = String(btn.data || btn.action || '');
   if (btn.type === 'url') return { key: null, url: true };
@@ -58,7 +50,6 @@ export default function TelegramStudioPhone({
   const firstWelcome = useRef(true);
   const [lines, setLines] = useState([]);
   const [typing, setTyping] = useState(false);
-  const [miniApp, setMiniApp] = useState(false);
   const busy = useRef(false);
   const buttonsSig = JSON.stringify(liveButtons);
 
@@ -76,7 +67,6 @@ export default function TelegramStudioPhone({
 
   const resetChat = () => {
     setTyping(false);
-    setMiniApp(false);
     busy.current = false;
     setLines([
       { id: uid(), from: 'user', text: '/start' },
@@ -125,41 +115,13 @@ export default function TelegramStudioPhone({
 
   const onMenu = async (btn) => {
     if (busy.current || btn.enabled === false) return;
-    setLines((prev) => [...prev, { id: uid(), from: 'user', text: btn.text || '…' }]);
-    if (btn.action === 'payment_usdt') {
-      busy.current = true;
-      setTyping(true);
-      await wait(360);
-      setTyping(false);
-      setLines((prev) => [
-        ...prev,
-        { id: uid(), from: 'bot', key: 'payment_usdt_tma', text: TMA_INTRO, buttons: TMA_BUTTONS }
-      ]);
-      onSelect?.({ kind: 'menu', index: btn._index });
-      busy.current = false;
-      return;
-    }
     const key = ACTION_SCENE[btn.action]?.key || btn.action;
+    setLines((prev) => [...prev, { id: uid(), from: 'user', text: btn.text || '…' }]);
     await pushBot(key, { kind: 'menu', index: btn._index });
   };
 
   const onInline = async (line, btn) => {
     if (busy.current) return;
-    if (btn.data === 'tma_pay' || btn.type === 'web_app') {
-      setMiniApp(true);
-      return;
-    }
-    if (btn.data === 'payment_usdt_chat') {
-      await pushBot('payment_usdt_input', { kind: 'scene', key: 'payment_usdt_input' });
-      return;
-    }
-    if (btn.data === 'payment_usdt' || btn.action === 'payment_usdt') {
-      setLines((prev) => [
-        ...prev,
-        { id: uid(), from: 'bot', key: 'payment_usdt_tma', text: TMA_INTRO, buttons: TMA_BUTTONS }
-      ]);
-      return;
-    }
     const next = nextFromInline(btn, contentsByKey, welcomeKey);
     onSelect?.({ kind: 'inline', index: btn._index, parentKey: line.key });
     if (next.url || !next.key || next.key === line.key) return;
@@ -216,19 +178,6 @@ export default function TelegramStudioPhone({
             重播
           </button>
         </div>
-      }
-      cover={
-        miniApp ? (
-          <div className="h-full flex flex-col">
-            <div className="flex items-center justify-between px-3 py-2 bg-[#2aabee] text-white text-[11px]">
-              <span>USDT 代付 Mini App</span>
-              <button type="button" className="font-bold" onClick={() => setMiniApp(false)}>
-                关闭
-              </button>
-            </div>
-            <iframe title="USDT 代付" src="/tma/pay" className="flex-1 w-full border-0 bg-white" />
-          </div>
-        ) : null
       }
       footer={
         <>

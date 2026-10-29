@@ -9,7 +9,6 @@ import { RequireAuth, GuestOnly } from './components/RequireAuth';
 const IndexPage = lazy(() => import('./pages/IndexPage'));
 const PayPage = lazy(() => import('./pages/PayPage'));
 const PayPageTRX = lazy(() => import('./pages/PayPageTRX'));
-const TmaPayPage = lazy(() => import('./pages/tma/TmaPayPage'));
 const AdminPage = lazy(() => import('./pages/AdminPage'));
 const FinancePage = lazy(() => import('./pages/FinancePage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
@@ -56,15 +55,13 @@ const App = () => {
   const { loading } = useAuth();
   const shell = useShellKind();
 
-  if (loading && shell !== 'tma') {
+  if (loading) {
     return <div className="min-h-screen flex items-center justify-center">加载中...</div>;
   }
 
   return (
     <ErrorBoundary>
-    <div className={shell === 'tma'
-      ? 'min-h-screen text-[#0a1224] font-sans flex flex-col'
-      : 'min-h-screen bg-[#f5fbff] text-[#0a1224] font-sans selection:bg-cyan-100 flex flex-col'}>
+    <div className="min-h-screen bg-[#f5fbff] text-[#0a1224] font-sans selection:bg-cyan-100 flex flex-col">
       {shell === 'public' && <PublicNav />}
 
         <Suspense fallback={<PageFallback />}>
@@ -72,7 +69,6 @@ const App = () => {
             <Route path="/" element={<IndexPage />} />
             <Route path="/pay" element={<PayPage />} />
             <Route path="/pay-trx" element={<PayPageTRX />} />
-            <Route path="/tma/pay" element={<TmaPayPage />} />
             <Route path="/faq" element={<FAQPage />} />
             <Route path="/swap" element={<SwapPage />} />
             <Route path="/energy-rental" element={<EnergyRentalPage />} />

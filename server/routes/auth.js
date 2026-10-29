@@ -1,4 +1,5 @@
 const express = require('express');
+const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Settings = require('../models/Settings');
@@ -16,12 +17,10 @@ const {
 const totp = require('../utils/totp');
 const { encryptPrivateKey, decryptPrivateKey, getMasterKey } = require('../utils/encryption');
 const rewardService = require('../services/rewardService');
-const crypto = require('crypto');
 const {
   getEnabledTelegramBots,
   hmacTelegramPayload,
-  telegramAuthHashMatches,
-  telegramWebAppHashMatches
+  telegramAuthHashMatches
 } = require('../utils/telegramBots');
 
 const router = express.Router();
@@ -59,33 +58,6 @@ const finishLogin = (req, res, user, status = 200) => {
   }
   setAuthCookie(res, req, signUser(user));
   return res.status(status).json({ user: publicUser(user) });
-};
-
-const upsertTelegramUser = async ({ id, first_name, last_name, username, photo_url }) => {
-  const telegramId = String(id);
-  let user = await User.findOne({ telegramId });
-  if (!user) {
-    user = new User({
-      username: username || `tg_${telegramId}`,
-      email: `${telegramId}@telegram.user`,
-      telegramId,
-      telegramUsername: username,
-      telegramFirstName: first_name,
-      telegramLastName: last_name,
-      telegramPhotoUrl: photo_url,
-      source: 'telegram',
-      password: crypto.randomBytes(32).toString('hex')
-    });
-    await user.save();
-    await rewardService.afterUserCreated(user, '');
-    return user;
-  }
-  user.telegramUsername = username;
-  user.telegramFirstName = first_name;
-  user.telegramLastName = last_name;
-  user.telegramPhotoUrl = photo_url;
-  await user.save();
-  return user;
 };
 
 const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -380,49 +352,40 @@ router.post('/telegram-login', rateLimit(30, 60000), async (req, res) => {
       return res.status(401).json({ error: 'Telegram 登录已过期，请重新登录' });
     }
 
-    const user = await upsertTelegramUser({ id, first_name, last_name, username, photo_url });
+    // 查找或创建用户
+    let user = await User.findOne({ telegramId: id.toString() });
+
+    if (!user) {
+      // 创建新用户
+      const telegramUsername = username || `tg_${id}`;
+      const telegramEmail = `${id}@telegram.user`;
+      
+      user = new User({
+        username: telegramUsername,
+        email: telegramEmail,
+        telegramId: id.toString(),
+        telegramUsername: username,
+        telegramFirstName: first_name,
+        telegramLastName: last_name,
+        telegramPhotoUrl: photo_url,
+        // Telegram 登录的用户不需要密码
+        password: crypto.randomBytes(32).toString('hex')
+      });
+
+      await user.save();
+      await rewardService.afterUserCreated(user, '');
+    } else {
+      // 更新用户信息
+      user.telegramUsername = username;
+      user.telegramFirstName = first_name;
+      user.telegramLastName = last_name;
+      user.telegramPhotoUrl = photo_url;
+      await user.save();
+    }
+
     finishLogin(req, res, user);
   } catch (error) {
     console.error('Telegram 登录错误:', error);
-    res.status(400).json({ error: error.message });
-  }
-});
-
-// Mini App initData 登录（与 Login Widget 哈希算法不同）
-router.post('/telegram-webapp', rateLimit(30, 60000), async (req, res) => {
-  try {
-    const initData = String(req.body.initData || '');
-    if (!initData) {
-      return res.status(400).json({ error: '缺少 initData' });
-    }
-
-    const settings = await Settings.findOne();
-    const botTokens = getEnabledTelegramBots(settings).map((bot) => bot.token);
-    if (!botTokens.length) {
-      return res.status(500).json({ error: 'Telegram Bot 未配置' });
-    }
-
-    const checked = telegramWebAppHashMatches(initData, botTokens);
-    if (!checked.ok || !checked.parsed.user?.id) {
-      return res.status(401).json({ error: 'Telegram 数据验证失败' });
-    }
-
-    const currentTime = Math.floor(Date.now() / 1000);
-    if (currentTime - checked.parsed.authDate > 86400) {
-      return res.status(401).json({ error: 'Telegram 登录已过期，请重新打开' });
-    }
-
-    const tgUser = checked.parsed.user;
-    const user = await upsertTelegramUser({
-      id: tgUser.id,
-      first_name: tgUser.first_name,
-      last_name: tgUser.last_name,
-      username: tgUser.username,
-      photo_url: tgUser.photo_url
-    });
-    finishLogin(req, res, user);
-  } catch (error) {
-    console.error('Telegram Mini App 登录错误:', error);
     res.status(400).json({ error: error.message });
   }
 });
