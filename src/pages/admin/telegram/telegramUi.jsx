@@ -84,6 +84,7 @@ export function TelegramDevice({
   avatar,
   children,
   footer,
+  cover,
   bodyRef,
   className = ''
 }) {
@@ -118,18 +119,22 @@ export function TelegramDevice({
             </div>
             <span className="text-white/90 text-lg px-1">⋮</span>
           </div>
-          <div
-            ref={bodyRef}
-            className="flex-1 min-h-0 overflow-y-auto px-2 py-2"
-            style={{
-              backgroundColor: '#b9cfe0',
-              backgroundImage: 'radial-gradient(rgba(255,255,255,0.42) 1px, transparent 1px)',
-              backgroundSize: '14px 14px'
-            }}
-          >
-            {children}
-          </div>
-          {footer}
+          {cover ? (
+            <div className="flex-1 min-h-0 bg-white">{cover}</div>
+          ) : (
+            <div
+              ref={bodyRef}
+              className="flex-1 min-h-0 overflow-y-auto px-2 py-2"
+              style={{
+                backgroundColor: '#b9cfe0',
+                backgroundImage: 'radial-gradient(rgba(255,255,255,0.42) 1px, transparent 1px)',
+                backgroundSize: '14px 14px'
+              }}
+            >
+              {children}
+            </div>
+          )}
+          {cover ? null : footer}
           <div className="bg-[#f0f0f0] h-5 flex items-center justify-center">
             <div className="w-28 h-1 rounded-full bg-black/20" />
           </div>

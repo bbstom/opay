@@ -67,7 +67,13 @@ async function handleCallback(ctx) {
 
 // 处理 USDT 代付
 async function handleUSDTPayment(ctx) {
-  const url = tmaPayUrl();
+  let settings = null;
+  try {
+    settings = await Settings.findOne().select('paymentNotifyUrl').lean();
+  } catch (error) {
+    console.error('读取 Mini App 地址配置失败:', error);
+  }
+  const url = tmaPayUrl(settings);
   if (isTmaUsdtDemoEnabled() && url) {
     try {
       await offerUsdtTma(ctx, url);
@@ -75,6 +81,9 @@ async function handleUSDTPayment(ctx) {
     } catch (error) {
       console.error('USDT Mini App 入口失败，回退对话下单:', error);
     }
+  }
+  if (isTmaUsdtDemoEnabled() && !url) {
+    console.warn('USDT Mini App 未发出：没有可用的 https 公网地址（APP_URL 不能是 127.0.0.1 / localhost）');
   }
   await handleUSDTPaymentChat(ctx);
 }
