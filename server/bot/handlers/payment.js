@@ -12,6 +12,32 @@ const {
   getConfirmKeyboard,
   getBackKeyboard 
 } = require('../keyboards/main');
+const { isTmaUsdtDemoEnabled, tmaPayUrl, getUsdtTmaKeyboard } = require('../tma');
+
+async function replyOrEdit(ctx, message, extra) {
+  if (ctx.callbackQuery && ctx.update?.callback_query) {
+    try {
+      await ctx.editMessageText(message, extra);
+      return;
+    } catch {
+      // 旧消息可能是图片，改为发一条新的
+    }
+  }
+  await ctx.reply(message, extra);
+}
+
+async function offerUsdtTma(ctx, url) {
+  ctx.session.paymentType = 'USDT';
+  ctx.session.state = null;
+  const message =
+    `💰 <b>USDT 代付</b>\n\n` +
+    `点下方按钮打开代付页面，填写地址和数量即可。\n` +
+    `也可以继续在对话里下单。`;
+  await replyOrEdit(ctx, message, {
+    parse_mode: 'HTML',
+    ...getUsdtTmaKeyboard(url)
+  });
+}
 
 // 处理回调查询
 async function handleCallback(ctx) {
@@ -19,6 +45,8 @@ async function handleCallback(ctx) {
 
   if (action === 'payment_usdt') {
     await handleUSDTPayment(ctx);
+  } else if (action === 'payment_usdt_chat') {
+    await handleUSDTPaymentChat(ctx);
   } else if (action === 'payment_trx') {
     await handleTRXPayment(ctx);
   } else if (action === 'confirm_payment') {
@@ -39,6 +67,19 @@ async function handleCallback(ctx) {
 
 // 处理 USDT 代付
 async function handleUSDTPayment(ctx) {
+  const url = tmaPayUrl();
+  if (isTmaUsdtDemoEnabled() && url) {
+    try {
+      await offerUsdtTma(ctx, url);
+      return;
+    } catch (error) {
+      console.error('USDT Mini App 入口失败，回退对话下单:', error);
+    }
+  }
+  await handleUSDTPaymentChat(ctx);
+}
+
+async function handleUSDTPaymentChat(ctx) {
   ctx.session.paymentType = 'USDT';
   ctx.session.state = 'waiting_usdt_amount';
 

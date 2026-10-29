@@ -12,6 +12,7 @@ const AUTH_SKIP_401 = [
   '/api/auth/logout',
   '/api/auth/login/2fa',
   '/api/auth/telegram-login',
+  '/api/auth/telegram-webapp',
   '/api/auth/check-qr-login',
   '/api/auth/qr-login-complete'
 ];
@@ -38,6 +39,9 @@ api.interceptors.response.use(
       api.post('/api/auth/logout').catch(() => {});
       window.dispatchEvent(new Event(AUTH_CLEARED_EVENT));
       const path = window.location.pathname;
+      if (path.startsWith('/tma')) {
+        return Promise.reject(error);
+      }
       if (!path.startsWith('/login')) {
         const next = encodeURIComponent(path + window.location.search);
         window.location.assign(`/login?redirect=${next}`);

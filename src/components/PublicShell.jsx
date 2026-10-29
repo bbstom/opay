@@ -341,6 +341,7 @@ export const useShellKind = () => {
     '/telegram-manage', '/seo-manage', '/admin/blog'
   ];
   const userPaths = ['/user-center', '/my-orders', '/my-tickets', '/my-rewards'];
+  if (pathname.startsWith('/tma')) return 'tma';
   if (adminPaths.some((p) => pathname === p || pathname.startsWith(p + '/'))) return 'admin';
   if (userPaths.includes(pathname)) return 'user';
   return 'public';
