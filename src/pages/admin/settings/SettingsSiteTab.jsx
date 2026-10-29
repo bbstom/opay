@@ -17,14 +17,14 @@ export default function SettingsSiteTab({ settings, setSettings, rateInfo, handl
                 <div>
                   <label className="text-sm font-bold text-slate-600 block mb-2">网站 Logo</label>
                   <input
-                    type="url"
+                    type="text"
                     value={settings.siteLogo || ''}
                     onChange={(e) => setSettings({ ...settings, siteLogo: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#0095ff] outline-none"
-                    placeholder="https://example.com/logo.png"
+                    placeholder="/opaylog.jpg 或 https://你的域名/opaylog.jpg"
                   />
                   <p className="text-xs text-slate-500 mt-1">
-                    导航栏显示的 Logo，支持 .png、.svg、.jpg 格式，推荐尺寸：200x200 或更大
+                    图片放项目 `public/`，构建后会出现在 `dist/`。网站根目录是 `dist`，所以填 `/文件名.jpg`，不要填 `/public/...`
                   </p>
                 </div>
 
@@ -55,14 +55,14 @@ export default function SettingsSiteTab({ settings, setSettings, rateInfo, handl
                 <div>
                   <label className="text-sm font-bold text-slate-600 block mb-2">网站图标 (Favicon)</label>
                   <input
-                    type="url"
+                    type="text"
                     value={settings.siteFavicon || ''}
                     onChange={(e) => setSettings({ ...settings, siteFavicon: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#0095ff] outline-none"
-                    placeholder="https://example.com/favicon.ico"
+                    placeholder="/opayfa.jpg 或 https://你的域名/opayfa.jpg"
                   />
                   <p className="text-xs text-slate-500 mt-1">
-                    浏览器标签页显示的图标，支持 .ico、.png、.svg 格式，推荐尺寸：32x32 或 64x64
+                    同样填 `/文件名`，对应 `dist` 里的文件。推荐正方形，.ico / .png / .jpg 均可
                   </p>
                 </div>
 
