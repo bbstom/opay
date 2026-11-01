@@ -1,6 +1,48 @@
 const { Markup } = require('telegraf');
 const TelegramMenu = require('../../models/TelegramMenu');
 
+const REWARD_MENU_BUTTONS = [
+  { text: '📅 签到', type: 'system', action: 'reward_checkin' },
+  { text: '🎁 邀请', type: 'system', action: 'reward_invite' },
+  { text: '💸 提现', type: 'system', action: 'reward_withdraw' }
+];
+
+function withRewardMenuButtons(buttons = []) {
+  const actions = new Set(buttons.map((btn) => btn.action));
+  if (REWARD_MENU_BUTTONS.every((btn) => actions.has(btn.action))) {
+    return buttons;
+  }
+  const maxRow = buttons.reduce((max, btn) => Math.max(max, Number(btn.row) || 0), -1);
+  const extras = REWARD_MENU_BUTTONS
+    .filter((btn) => !actions.has(btn.action))
+    .map((btn, index) => ({
+      ...btn,
+      row: maxRow + 1,
+      col: index,
+      order: 900 + index,
+      enabled: true,
+      showInSlash: true
+    }));
+  return buttons.concat(extras);
+}
+
+function withRewardInlineRow(replyMarkup) {
+  if (!replyMarkup?.inline_keyboard) return replyMarkup;
+  const rows = replyMarkup.inline_keyboard;
+  const has = (data) => rows.some((row) => row.some((btn) => btn.callback_data === data));
+  if (has('reward_checkin') && has('reward_invite') && has('reward_withdraw')) {
+    return replyMarkup;
+  }
+  return {
+    ...replyMarkup,
+    inline_keyboard: rows.concat([[
+      { text: '📅 签到', callback_data: 'reward_checkin' },
+      { text: '🎁 邀请', callback_data: 'reward_invite' },
+      { text: '💸 提现', callback_data: 'reward_withdraw' }
+    ]])
+  };
+}
+
 // 主菜单键盘（从数据库读取配置）
 async function getMainKeyboard() {
   try {
@@ -11,9 +53,11 @@ async function getMainKeyboard() {
       return getDefaultMainKeyboard();
     }
 
+    const sourceButtons = withRewardMenuButtons(menu.buttons);
+
     // 按行分组按钮
     const rows = {};
-    menu.buttons
+    sourceButtons
       .filter(btn => btn.enabled)
       .sort((a, b) => a.order - b.order)
       .forEach(btn => {
@@ -61,6 +105,11 @@ function getDefaultMainKeyboard() {
     [
       Markup.button.callback('👤 个人中心', 'account_info'),
       Markup.button.callback('❓ 帮助中心', 'help_center')
+    ],
+    [
+      Markup.button.callback('📅 签到', 'reward_checkin'),
+      Markup.button.callback('🎁 邀请', 'reward_invite'),
+      Markup.button.callback('💸 提现', 'reward_withdraw')
     ]
   ]);
 }
@@ -134,5 +183,6 @@ module.exports = {
   getBackKeyboard,
   getOrdersKeyboard,
   getOrderDetailKeyboard,
-  getStatusEmoji
+  getStatusEmoji,
+  withRewardInlineRow
 };

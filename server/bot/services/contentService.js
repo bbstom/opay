@@ -1,5 +1,8 @@
 const TelegramContent = require('../../models/TelegramContent');
 const { Markup } = require('telegraf');
+const { withRewardInlineRow } = require('../keyboards/main');
+
+const MENU_CONTENT_KEYS = new Set(['welcome_new_user', 'welcome_returning_user', 'main_menu']);
 
 class ContentService {
   constructor() {
@@ -171,13 +174,22 @@ class ContentService {
         parse_mode: rendered.parseMode
       };
 
-      // 如果有自定义按钮，使用自定义按钮；否则使用默认键盘
-      if (rendered.buttons) {
+      const defaultMarkup = defaultKeyboard?.reply_markup || null;
+      const isMenuKey = MENU_CONTENT_KEYS.has(key);
+      // 欢迎/主菜单的底部键盘以 TelegramMenu 为准，避免文案里的旧按钮把签到/邀请/提现盖掉
+      if (isMenuKey && defaultMarkup) {
+        options.reply_markup = defaultMarkup;
+        console.log(`🔍 [contentService] 使用主菜单键盘: ${key}`);
+      } else if (rendered.buttons) {
         options.reply_markup = rendered.buttons.reply_markup;
         console.log(`🔍 [contentService] 使用自定义按钮`);
-      } else if (defaultKeyboard) {
-        options.reply_markup = defaultKeyboard.reply_markup;
+      } else if (defaultMarkup) {
+        options.reply_markup = defaultMarkup;
         console.log(`🔍 [contentService] 使用默认键盘`);
+      }
+
+      if (isMenuKey) {
+        options.reply_markup = withRewardInlineRow(options.reply_markup);
       }
 
       // 根据类型发送

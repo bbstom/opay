@@ -106,8 +106,13 @@ const EnergyRentalPage = () => {
           <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-tr from-orange-500 to-red-600 rounded-xl mb-2 shadow-lg shadow-orange-200">
             <Zap className="text-white" size={24} />
           </div>
-          <h1 className="text-2xl font-black text-slate-900 mb-1">能量租赁</h1>
-          <p className="text-sm text-slate-600">转入 TRX，自动获得能量</p>
+          <h1 className="text-2xl font-black text-slate-900 mb-1 flex items-center justify-center gap-2.5 flex-wrap">
+            能量租赁
+            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-black tracking-wider text-white bg-[#FF060A] shadow-sm">
+              TRC20
+            </span>
+          </h1>
+          <p className="text-sm text-slate-600">仅支持波场 TRC20 网络，转入 TRX 自动获得能量</p>
         </div>
 
         <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-lg">
@@ -115,7 +120,12 @@ const EnergyRentalPage = () => {
           <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-3 mb-4 border border-orange-200">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="text-center md:text-left">
-                <p className="text-xs text-slate-600 mb-1">能量租赁服务</p>
+                <p className="text-xs text-slate-600 mb-1 flex items-center justify-center md:justify-start gap-1.5">
+                  能量租赁服务
+                  <span className="inline-flex items-center px-1.5 py-px rounded text-[10px] font-black tracking-wider text-white bg-[#FF060A]">
+                    TRC20
+                  </span>
+                </p>
                 <p className="text-lg font-black text-slate-900">转 TRX 即可获得能量</p>
               </div>
               <div className="text-center md:text-right">
@@ -144,7 +154,12 @@ const EnergyRentalPage = () => {
               <div className="space-y-3">
                 {/* 地址 */}
                 <div>
-                  <label className="text-xs font-bold text-slate-600 block mb-1">收款地址（TRX）</label>
+                  <label className="text-xs font-bold text-slate-600 mb-1 flex items-center gap-1.5">
+                    收款地址（TRX）
+                    <span className="inline-flex items-center px-1.5 py-px rounded text-[10px] font-black tracking-wider text-[#FF060A] bg-[#FFE8E8]">
+                      TRC20
+                    </span>
+                  </label>
                   <div className="flex items-center gap-2">
                     <div className="flex-1 bg-slate-50 rounded-lg px-3 py-2 font-mono text-xs text-slate-900 break-all border border-slate-200">
                       {walletAddress}
@@ -163,7 +178,7 @@ const EnergyRentalPage = () => {
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                   <p className="text-xs text-blue-800 font-bold mb-1.5">💡 使用说明</p>
                   <ol className="text-xs text-blue-700 space-y-1 ml-3 list-decimal">
-                    <li>转 TRX 到上方地址</li>
+                    <li>转 TRX 到上方地址（TRC20）</li>
                     <li>系统自动检测并分配能量</li>
                     <li>能量发送到您的转出地址</li>
                     <li>约需 1-5 分钟完成</li>
@@ -181,7 +196,7 @@ const EnergyRentalPage = () => {
                     </div>
                   ) : (
                     <ul className="text-xs text-yellow-700 space-y-0.5 ml-3 list-disc">
-                      <li>仅支持 TRX 转账</li>
+                      <li>仅支持波场 TRC20 网络的 TRX 转账</li>
                       <li>最小金额：{minAmount} TRX</li>
                       <li>能量有效期：{validityHours}小时</li>
                     </ul>
@@ -214,7 +229,7 @@ const EnergyRentalPage = () => {
                 type="text"
                 value={receiveAddress}
                 onChange={(e) => setReceiveAddress(e.target.value.trim())}
-                placeholder="接收能量的 TRON 地址"
+                placeholder="接收能量的 TRC20 地址"
                 className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-500"
               />
               <input

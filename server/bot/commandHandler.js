@@ -51,10 +51,28 @@ const commandHandlers = {
   account: async (ctx) => {
     const startHandler = require('./handlers/start');
     await startHandler.accountInfo(ctx);
+  },
+
+  checkin: async (ctx) => {
+    const rewardsHandler = require('./handlers/rewards');
+    await rewardsHandler.showCheckin(ctx);
+  },
+
+  invite: async (ctx) => {
+    const rewardsHandler = require('./handlers/rewards');
+    await rewardsHandler.showInvite(ctx);
+  },
+
+  withdraw: async (ctx) => {
+    const rewardsHandler = require('./handlers/rewards');
+    await rewardsHandler.showWithdraw(ctx);
   }
 };
 
 commandHandlers.orders = commandHandlers.my_orders;
+commandHandlers.reward_checkin = commandHandlers.checkin;
+commandHandlers.reward_invite = commandHandlers.invite;
+commandHandlers.reward_withdraw = commandHandlers.withdraw;
 
 // 注册自定义命令
 async function registerCustomCommands(bot) {
@@ -101,6 +119,9 @@ async function setDefaultCommands(bot) {
     { command: 'orders', description: '我的订单' },
     { command: 'tickets', description: '我的工单' },
     { command: 'account', description: '个人中心' },
+    { command: 'checkin', description: '每日签到' },
+    { command: 'invite', description: '邀请好友' },
+    { command: 'withdraw', description: 'USDT提现' },
     { command: 'help', description: '帮助信息' }
   ];
 
@@ -190,7 +211,8 @@ async function initializeDefaultCommands() {
     const count = await TelegramCommand.countDocuments();
     
     if (count > 0) {
-      console.log('✅ 已存在自定义命令，跳过初始化');
+      console.log('✅ 已存在自定义命令，跳过完整初始化');
+      await ensureRewardCommands();
       return;
     }
 
@@ -260,19 +282,87 @@ async function initializeDefaultCommands() {
         icon: '👤'
       },
       {
+        command: 'checkin',
+        description: '每日签到',
+        action: 'function',
+        functionName: 'checkin',
+        order: 9,
+        icon: '📅'
+      },
+      {
+        command: 'invite',
+        description: '邀请好友',
+        action: 'function',
+        functionName: 'invite',
+        order: 10,
+        icon: '🎁'
+      },
+      {
+        command: 'withdraw',
+        description: 'USDT提现',
+        action: 'function',
+        functionName: 'withdraw',
+        order: 11,
+        icon: '💸'
+      },
+      {
         command: 'help',
         description: '帮助信息',
         action: 'function',
         functionName: 'help',
-        order: 9,
+        order: 12,
         icon: '❓'
       }
     ];
 
     await TelegramCommand.insertMany(defaultCommands);
     console.log('✅ 已初始化默认命令:', defaultCommands.length, '个');
+    await ensureRewardCommands();
   } catch (error) {
     console.error('❌ 初始化默认命令失败:', error);
+  }
+}
+
+async function ensureRewardCommands() {
+  const extras = [
+    {
+      command: 'checkin',
+      description: '每日签到',
+      action: 'function',
+      functionName: 'checkin',
+      order: 20,
+      icon: '📅',
+      enabled: true,
+      showInMenu: true
+    },
+    {
+      command: 'invite',
+      description: '邀请好友',
+      action: 'function',
+      functionName: 'invite',
+      order: 21,
+      icon: '🎁',
+      enabled: true,
+      showInMenu: true
+    },
+    {
+      command: 'withdraw',
+      description: 'USDT提现',
+      action: 'function',
+      functionName: 'withdraw',
+      order: 22,
+      icon: '💸',
+      enabled: true,
+      showInMenu: true
+    }
+  ];
+
+  for (const cmd of extras) {
+    await TelegramCommand.updateOne(
+      { command: cmd.command },
+      { $setOnInsert: cmd },
+      { upsert: true }
+    );
   }
 }
 

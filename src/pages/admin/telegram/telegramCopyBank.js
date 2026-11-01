@@ -15,7 +15,7 @@ const previewOf = (text) =>
     .trim()
     .slice(0, 56);
 
-export const COPY_GROUPS = ['全部', '开场', '代付', '订单', '能量', '闪兑', '帮助', '账户', '积木'];
+export const COPY_GROUPS = ['全部', '开场', '代付', '订单', '能量', '闪兑', '帮助', '账户', '奖励', '积木'];
 
 const style = (key, name, group, text, buttons = []) => ({
   key,
@@ -299,6 +299,44 @@ export const COPY_STYLES = [
     '工单开场',
     '账户',
     `💬 <b>我的工单</b>\n\n查看进度，或点下方创建新工单。`
+  ),
+  style(
+    'style_reward_checkin',
+    '签到卡片',
+    '奖励',
+    `📅 <b>每日签到</b>\n\n` +
+      `━━━━━━━━━━━━━━━\n` +
+      `<code>TRX 余额：</code><b>{{trxBalance}}</b>\n` +
+      `<code>今日状态：</code>{{checkinStatus}}\n` +
+      `<code>签到奖励：</code>+{{checkinTrx}} TRX\n` +
+      `━━━━━━━━━━━━━━━\n\n` +
+      `点下方按钮领取今日奖励。`
+  ),
+  style(
+    'style_reward_invite',
+    '邀请卡片',
+    '奖励',
+    `🎁 <b>邀请好友</b>\n\n` +
+      `好友注册，你得 <b>+{{inviteSignupTrx}} TRX</b>\n` +
+      `下级消费返 <b>{{consumeRewardUsdtPercent}}%</b> USDT\n\n` +
+      `━━━━━━━━━━━━━━━\n` +
+      `<code>邀请码：</code><code>{{inviteCode}}</code>\n` +
+      `<code>已邀请：</code>{{inviteeCount}} 人\n` +
+      `━━━━━━━━━━━━━━━\n\n` +
+      `机器人：\n<code>{{telegramInviteUrl}}</code>\n` +
+      `网站：\n<code>{{webInviteUrl}}</code>`
+  ),
+  style(
+    'style_reward_withdraw',
+    '提现卡片',
+    '奖励',
+    `💸 <b>USDT 提现</b>\n\n` +
+      `━━━━━━━━━━━━━━━\n` +
+      `<code>可提现：</code><b>{{usdtReward}}</b> USDT\n` +
+      `<code>最低提现：</code>{{withdrawMinUsdt}} USDT\n` +
+      `<code>手续费：</code>{{withdrawFeeUsdt}} USDT\n` +
+      `━━━━━━━━━━━━━━━\n\n` +
+      `最近提现\n{{withdrawList}}`
   )
 ];
 
@@ -374,6 +412,59 @@ export const COPY_EXTRAS = [
         `<code>总订单：</code>{{totalOrders}}\n` +
         `<code>已完成：</code>{{completedOrders}}\n` +
         `<code>处理中：</code>{{pendingOrders}}`
+    },
+    buttons: []
+  },
+  {
+    key: 'reward_checkin',
+    name: '每日签到',
+    category: 'custom',
+    group: '奖励',
+    content: {
+      text:
+        `📅 <b>每日签到</b>\n\n` +
+        `━━━━━━━━━━━━━━━\n` +
+        `<code>TRX 余额：</code><b>{{trxBalance}}</b>\n` +
+        `<code>今日状态：</code>{{checkinStatus}}\n` +
+        `<code>签到奖励：</code>+{{checkinTrx}} TRX\n` +
+        `━━━━━━━━━━━━━━━\n\n` +
+        `点下方按钮领取今日奖励。`
+    },
+    buttons: []
+  },
+  {
+    key: 'reward_invite',
+    name: '邀请好友',
+    category: 'custom',
+    group: '奖励',
+    content: {
+      text:
+        `🎁 <b>邀请好友</b>\n\n` +
+        `好友注册，你得 <b>+{{inviteSignupTrx}} TRX</b>\n` +
+        `下级消费返 <b>{{consumeRewardUsdtPercent}}%</b> USDT，可提现\n\n` +
+        `━━━━━━━━━━━━━━━\n` +
+        `<code>邀请码：</code><code>{{inviteCode}}</code>\n` +
+        `<code>已邀请：</code>{{inviteeCount}} 人\n` +
+        `━━━━━━━━━━━━━━━\n\n` +
+        `机器人：\n<code>{{telegramInviteUrl}}</code>\n` +
+        `网站：\n<code>{{webInviteUrl}}</code>`
+    },
+    buttons: []
+  },
+  {
+    key: 'reward_withdraw',
+    name: 'USDT 提现',
+    category: 'custom',
+    group: '奖励',
+    content: {
+      text:
+        `💸 <b>USDT 提现</b>\n\n` +
+        `━━━━━━━━━━━━━━━\n` +
+        `<code>可提现：</code><b>{{usdtReward}}</b> USDT\n` +
+        `<code>最低提现：</code>{{withdrawMinUsdt}} USDT\n` +
+        `<code>手续费：</code>{{withdrawFeeUsdt}} USDT\n` +
+        `━━━━━━━━━━━━━━━\n\n` +
+        `最近提现\n{{withdrawList}}`
     },
     buttons: []
   }

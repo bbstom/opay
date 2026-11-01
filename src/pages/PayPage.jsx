@@ -636,9 +636,24 @@ const PayPage = ({ forcedPayType = 'USDT' }) => {
       `}</style>
 
       <div className="max-w-5xl mx-auto px-4 space-y-4">
-        <div className="text-center mb-1">
-          <h1 className="text-2xl font-black text-slate-900 mb-1">{payType} 代付</h1>
-          <p className="text-sm text-slate-600">输入地址与数量，自动完成链上转账</p>
+        <div className="mb-1">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/90 border border-cyan-100 shadow-sm mb-2">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            </span>
+            <span className="text-[10px] font-black tracking-[0.16em] text-cyan-700 uppercase">Live</span>
+            <span className="w-px h-3 bg-slate-200" />
+            <span className="text-[11px] font-medium text-slate-500">自动结算 · 无需能量</span>
+          </div>
+          <h1 className="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2.5 flex-wrap">
+            {payType}{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-500 to-blue-600">代付工作台</span>
+            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-black tracking-wider text-white bg-[#FF060A] shadow-sm">
+              TRC20
+            </span>
+          </h1>
+          <p className="text-sm text-slate-500 mt-1">仅支持波场 TRC20 网络，输入地址与数量即可自动转账</p>
         </div>
         {/* 工作台顶部 - 一句话广告 */}
         {getAdsByPosition('workspace-top').length > 0 && (
@@ -685,11 +700,48 @@ const PayPage = ({ forcedPayType = 'USDT' }) => {
 
         {/* 核心操作卡片 */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-lg overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-slate-100 bg-slate-50">
-            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <CoinIcon className="w-4 h-4" />
-              <span>{payType} 代付工作台</span>
-            </h3>
+          <div className={`relative px-4 py-3.5 border-b overflow-hidden ${
+            isUSDT
+              ? 'border-[#26A17B]/15 bg-gradient-to-r from-[#E8F7F1] via-white to-white'
+              : 'border-[#FF060A]/15 bg-gradient-to-r from-[#FFECEC] via-white to-white'
+          }`}>
+            <div className={`pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full blur-2xl ${
+              isUSDT ? 'bg-[#26A17B]/20' : 'bg-[#FF060A]/20'
+            }`} />
+            <div className="relative flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className={`shrink-0 w-10 h-10 rounded-2xl bg-white shadow-sm flex items-center justify-center ring-1 ${
+                  isUSDT ? 'ring-[#26A17B]/25' : 'ring-[#FF060A]/25'
+                }`}>
+                  <CoinIcon className="w-6 h-6" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-[15px] font-black tracking-tight text-slate-900">
+                      {payType} 代付
+                    </h3>
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black tracking-wider text-white bg-[#FF060A]">
+                      TRC20
+                    </span>
+                  </div>
+                  <p className="text-[11px] font-medium text-slate-500 mt-0.5 truncate">
+                    仅支持波场 TRC20 · 不支持 ERC20 / BEP20
+                  </p>
+                </div>
+              </div>
+              <div className="hidden sm:flex items-center gap-1.5 shrink-0">
+                <span className="inline-flex items-center px-2 py-1 rounded-lg bg-[#FF060A] text-white text-[10px] font-black tracking-wider">
+                  TRON · TRC20
+                </span>
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white/80 border border-slate-100 text-[10px] font-bold text-slate-600">
+                  <ShieldCheck size={12} className="text-cyan-600" />
+                  自动校验
+                </span>
+                <span className="inline-flex items-center px-2 py-1 rounded-lg bg-white/80 border border-slate-100 text-[10px] font-bold text-slate-600 tabular-nums">
+                  {currentRateDisplay}
+                </span>
+              </div>
+            </div>
           </div>
 
           <div className="p-4">
@@ -701,6 +753,9 @@ const PayPage = ({ forcedPayType = 'USDT' }) => {
                       <label className="flex items-center gap-1.5 text-xs font-bold text-slate-600 mb-1">
                         <Wallet size={14} className="text-cyan-600" />
                         代付目标收款地址
+                        <span className="inline-flex items-center px-1.5 py-px rounded text-[10px] font-black tracking-wider text-[#FF060A] bg-[#FFE8E8]">
+                          TRC20
+                        </span>
                       </label>
                       <div className="relative">
                         <input 

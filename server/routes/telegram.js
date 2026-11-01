@@ -19,7 +19,10 @@ const defaultMenuButtons = () => [
   { text: '📋 我的订单', type: 'system', action: 'orders_list', row: 2, col: 0, order: 4, enabled: true, showInSlash: true },
   { text: '💬 工单', type: 'system', action: 'tickets_list', row: 2, col: 1, order: 5, enabled: true, showInSlash: true },
   { text: '👤 个人中心', type: 'system', action: 'account_info', row: 3, col: 0, order: 6, enabled: true, showInSlash: true },
-  { text: '❓ 帮助', type: 'system', action: 'help_center', row: 3, col: 1, order: 7, enabled: true, showInSlash: true }
+  { text: '❓ 帮助', type: 'system', action: 'help_center', row: 3, col: 1, order: 7, enabled: true, showInSlash: true },
+  { text: '📅 签到', type: 'system', action: 'reward_checkin', row: 4, col: 0, order: 8, enabled: true, showInSlash: true },
+  { text: '🎁 邀请', type: 'system', action: 'reward_invite', row: 4, col: 1, order: 9, enabled: true, showInSlash: true },
+  { text: '💸 提现', type: 'system', action: 'reward_withdraw', row: 4, col: 2, order: 10, enabled: true, showInSlash: true }
 ];
 
 // ==================== 模板管理 ====================
@@ -537,7 +540,10 @@ router.get('/menu/system-actions', async (req, res) => {
       { value: 'orders_list', label: '我的订单', icon: '📋', category: '订单' },
       { value: 'tickets_list', label: '工单系统', icon: '💬', category: '客服' },
       { value: 'account_info', label: '个人中心', icon: '👤', category: '账户' },
-      { value: 'help_center', label: '帮助中心', icon: '❓', category: '帮助' }
+      { value: 'help_center', label: '帮助中心', icon: '❓', category: '帮助' },
+      { value: 'reward_checkin', label: '每日签到', icon: '📅', category: '奖励' },
+      { value: 'reward_invite', label: '邀请好友', icon: '🎁', category: '奖励' },
+      { value: 'reward_withdraw', label: 'USDT 提现', icon: '💸', category: '奖励' }
     ];
 
     res.json(systemActions);

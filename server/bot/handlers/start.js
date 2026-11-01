@@ -35,6 +35,10 @@ async function start(ctx) {
 
     if (user) {
       // 已有账户，欢迎回来
+      if (inviteCode) {
+        await rewardService.bindInviter(user, inviteCode);
+        user = await User.findById(user._id) || user;
+      }
       ctx.session.user = user;
       
       // 检查是否有从群组跳转的操作参数（邀请码不当操作处理）
@@ -377,7 +381,11 @@ async function help(ctx) {
       `🔔 <b>通知功能</b>\n` +
       `<code>•</code> 支付成功自动通知\n` +
       `<code>•</code> 代付完成自动通知\n` +
-      `<code>•</code> 无需手动刷新\n\n`;
+      `<code>•</code> 无需手动刷新\n\n` +
+      `🎁 <b>签到 / 邀请 / 提现</b>\n` +
+      `<code>•</code> 每日签到领 TRX\n` +
+      `<code>•</code> 邀请好友得 TRX，下级消费返 USDT\n` +
+      `<code>•</code> USDT 奖励可申请提现\n\n`;
 
     if (telegramCustomerService) {
       helpText += `💬 <b>需要帮助？</b>\n` +
@@ -399,6 +407,7 @@ async function cancel(ctx) {
   if (ctx.session) {
     delete ctx.session.state;
     delete ctx.session.paymentData;
+    delete ctx.session.withdrawData;
   }
 
   await ctx.reply(
@@ -445,6 +454,11 @@ async function accountInfo(ctx) {
   const { Markup } = require('telegraf');
   const accountKeyboard = Markup.inlineKeyboard([
     [Markup.button.callback('📧 修改邮箱', 'change_email')],
+    [
+      Markup.button.callback('📅 签到', 'reward_checkin'),
+      Markup.button.callback('🎁 邀请', 'reward_invite'),
+      Markup.button.callback('💸 提现', 'reward_withdraw')
+    ],
     [Markup.button.callback('« 返回主菜单', 'back_to_main')]
   ]);
   const sent = await contentService.sendContent(ctx, 'account_info', accountVars, accountKeyboard);
@@ -616,6 +630,7 @@ async function handleBack(ctx) {
   if (ctx.session) {
     delete ctx.session.state;
     delete ctx.session.paymentData;
+    delete ctx.session.withdrawData;
   }
 
   if (action === 'back_to_main' || action === 'back_main') {
@@ -676,6 +691,7 @@ async function handleStartPayload(ctx, payload) {
   const ticketsHandler = require('./tickets');
   const energyHandler = require('./energy');
   const swapHandler = require('./swap');
+  const rewardsHandler = require('./rewards');
   
   try {
     // 根据参数执行相应操作
@@ -692,6 +708,15 @@ async function handleStartPayload(ctx, payload) {
         return await energyHandler.start(ctx);
       case 'swap_service':
         return await swapHandler.start(ctx);
+      case 'checkin':
+      case 'reward_checkin':
+        return await rewardsHandler.showCheckin(ctx);
+      case 'invite':
+      case 'reward_invite':
+        return await rewardsHandler.showInvite(ctx);
+      case 'withdraw':
+      case 'reward_withdraw':
+        return await rewardsHandler.showWithdraw(ctx);
       case 'account_info':
         return await accountInfo(ctx);
       case 'help':

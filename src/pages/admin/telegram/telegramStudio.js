@@ -7,7 +7,10 @@ export const ACTION_SLASH = {
   orders_list: { command: 'orders', description: '我的订单', functionName: 'my_orders' },
   tickets_list: { command: 'tickets', description: '我的工单', functionName: 'tickets' },
   account_info: { command: 'account', description: '个人中心', functionName: 'account' },
-  help_center: { command: 'help', description: '帮助信息', functionName: 'help' }
+  help_center: { command: 'help', description: '帮助信息', functionName: 'help' },
+  reward_checkin: { command: 'checkin', description: '每日签到', functionName: 'checkin' },
+  reward_invite: { command: 'invite', description: '邀请好友', functionName: 'invite' },
+  reward_withdraw: { command: 'withdraw', description: 'USDT提现', functionName: 'withdraw' }
 };
 
 export const RECOMMENDED_MENU = [
@@ -18,7 +21,10 @@ export const RECOMMENDED_MENU = [
   { text: '📋 我的订单', type: 'system', action: 'orders_list', row: 2, col: 0, order: 4, enabled: true, showInSlash: true },
   { text: '💬 工单', type: 'system', action: 'tickets_list', row: 2, col: 1, order: 5, enabled: true, showInSlash: true },
   { text: '👤 个人中心', type: 'system', action: 'account_info', row: 3, col: 0, order: 6, enabled: true, showInSlash: true },
-  { text: '❓ 帮助', type: 'system', action: 'help_center', row: 3, col: 1, order: 7, enabled: true, showInSlash: true }
+  { text: '❓ 帮助', type: 'system', action: 'help_center', row: 3, col: 1, order: 7, enabled: true, showInSlash: true },
+  { text: '📅 签到', type: 'system', action: 'reward_checkin', row: 4, col: 0, order: 8, enabled: true, showInSlash: true },
+  { text: '🎁 邀请', type: 'system', action: 'reward_invite', row: 4, col: 1, order: 9, enabled: true, showInSlash: true },
+  { text: '💸 提现', type: 'system', action: 'reward_withdraw', row: 4, col: 2, order: 10, enabled: true, showInSlash: true }
 ];
 
 export const CORE_SCENES = [
@@ -47,7 +53,15 @@ export const CORE_SCENES = [
   { key: 'energy_rental', title: '能量租赁', when: '点能量', group: '服务' },
   { key: 'swap_service', title: '闪兑', when: '点闪兑', group: '服务' },
   { key: 'tickets_list', title: '工单', when: '点工单', group: '账户' },
-  { key: 'account_info', title: '个人中心', when: '点个人中心', group: '账户' }
+  { key: 'account_info', title: '个人中心', when: '点个人中心', group: '账户' },
+  { key: 'reward_checkin', title: '每日签到', when: '点签到', group: '奖励' },
+  { key: 'reward_checkin_ok', title: '签到成功', when: '签到到账', group: '奖励' },
+  { key: 'reward_invite', title: '邀请好友', when: '点邀请', group: '奖励' },
+  { key: 'reward_withdraw', title: 'USDT 提现', when: '点提现', group: '奖励' },
+  { key: 'reward_withdraw_amount', title: '提现：输入金额', when: '申请提现', group: '奖励' },
+  { key: 'reward_withdraw_address', title: '提现：输入地址', when: '填完金额', group: '奖励' },
+  { key: 'reward_withdraw_confirm', title: '提现：确认', when: '填完地址', group: '奖励' },
+  { key: 'reward_withdraw_ok', title: '提现已提交', when: '确认提现', group: '奖励' }
 ];
 
 // 底部按钮点下去后，编辑的是哪段回复
@@ -59,7 +73,10 @@ export const ACTION_SCENE = {
   orders_list: { key: 'orders_list', title: '我的订单', category: 'order' },
   tickets_list: { key: 'tickets_list', title: '工单', category: 'custom' },
   account_info: { key: 'account_info', title: '个人中心', category: 'custom' },
-  help_center: { key: 'help_center', title: '帮助', category: 'help' }
+  help_center: { key: 'help_center', title: '帮助', category: 'help' },
+  reward_checkin: { key: 'reward_checkin', title: '每日签到', category: 'custom' },
+  reward_invite: { key: 'reward_invite', title: '邀请好友', category: 'custom' },
+  reward_withdraw: { key: 'reward_withdraw', title: 'USDT 提现', category: 'custom' }
 };
 
 export const WELCOME_VERSIONS = [
@@ -134,7 +151,27 @@ export const VAR_ACCOUNT = [
   { key: 'pendingOrders', label: '处理中订单', group: '账户' }
 ];
 
-export const ALL_VARS = [...VAR_ALWAYS, ...VAR_PAYMENT, ...VAR_ORDER, ...VAR_ENERGY, ...VAR_SWAP, ...VAR_ACCOUNT];
+export const VAR_REWARD = [
+  { key: 'usdtReward', label: 'USDT 奖励余额', group: '奖励' },
+  { key: 'checkinTrx', label: '签到奖励 TRX', group: '奖励' },
+  { key: 'checkinStatus', label: '今日签到状态', group: '奖励' },
+  { key: 'checkinTrxGot', label: '本次签到到账', group: '奖励' },
+  { key: 'inviteCode', label: '邀请码', group: '奖励' },
+  { key: 'inviteeCount', label: '已邀请人数', group: '奖励' },
+  { key: 'inviteSignupTrx', label: '邀请注册奖励', group: '奖励' },
+  { key: 'telegramInviteUrl', label: '机器人邀请链接', group: '奖励' },
+  { key: 'webInviteUrl', label: '网站邀请链接', group: '奖励' },
+  { key: 'withdrawMinUsdt', label: '最低提现 USDT', group: '奖励' },
+  { key: 'withdrawFeeUsdt', label: '提现手续费', group: '奖励' },
+  { key: 'consumeRewardUsdtPercent', label: '消费返佣比例', group: '奖励' },
+  { key: 'withdrawAmount', label: '提现金额', group: '奖励' },
+  { key: 'withdrawFee', label: '本单手续费', group: '奖励' },
+  { key: 'withdrawNet', label: '提现到账', group: '奖励' },
+  { key: 'withdrawAddress', label: '提现地址', group: '奖励' },
+  { key: 'withdrawList', label: '最近提现列表', group: '奖励' }
+];
+
+export const ALL_VARS = [...VAR_ALWAYS, ...VAR_PAYMENT, ...VAR_ORDER, ...VAR_ENERGY, ...VAR_SWAP, ...VAR_ACCOUNT, ...VAR_REWARD];
 export const DEFAULT_VARS = VAR_ALWAYS;
 
 // 这个场景发消息时，handler 会额外传哪些值（通用变量由 Bot 自己补）
@@ -164,7 +201,15 @@ export const SCENE_VARS = {
   order_failed: ['orderId', 'reason'],
   energy_rental: ['energyPriceTrx', 'energyPriceEnergy', 'energyMinAmount', 'trxBalance', 'trxDepositMin', 'energyNotice'],
   swap_service: ['swapRate', 'swapLastUpdate', 'swapAddress', 'swapNotice'],
-  account_info: ['username', 'email', 'telegramId', 'createdAt', 'totalOrders', 'completedOrders', 'pendingOrders']
+  account_info: ['username', 'email', 'telegramId', 'createdAt', 'totalOrders', 'completedOrders', 'pendingOrders'],
+  reward_checkin: ['trxBalance', 'checkinTrx', 'checkinStatus'],
+  reward_checkin_ok: ['checkinTrxGot', 'trxBalance'],
+  reward_invite: ['inviteCode', 'inviteeCount', 'inviteSignupTrx', 'telegramInviteUrl', 'webInviteUrl', 'consumeRewardUsdtPercent'],
+  reward_withdraw: ['usdtReward', 'withdrawMinUsdt', 'withdrawFeeUsdt', 'withdrawList'],
+  reward_withdraw_amount: ['usdtReward', 'withdrawMinUsdt', 'withdrawFeeUsdt'],
+  reward_withdraw_address: ['withdrawAmount', 'withdrawFee', 'withdrawNet'],
+  reward_withdraw_confirm: ['withdrawAmount', 'withdrawFee', 'withdrawNet', 'withdrawAddress'],
+  reward_withdraw_ok: ['withdrawAmount', 'withdrawFee', 'withdrawNet', 'withdrawAddress']
 };
 
 export const varsForScene = (key) => {
@@ -287,7 +332,24 @@ export const PREVIEW_SAMPLE = {
   swapNotice: '以到账时汇率为准',
   totalOrders: '12',
   completedOrders: '9',
-  pendingOrders: '3'
+  pendingOrders: '3',
+  usdtReward: '18.5',
+  checkinTrx: '1',
+  checkinStatus: '今日未签到',
+  checkinTrxGot: '1',
+  inviteCode: 'K7M2P9QX',
+  inviteeCount: '3',
+  inviteSignupTrx: '5',
+  telegramInviteUrl: 'https://t.me/demo_bot?start=inv_K7M2P9QX',
+  webInviteUrl: 'https://opay.example/login?invite=K7M2P9QX',
+  withdrawMinUsdt: '10',
+  withdrawFeeUsdt: '0',
+  consumeRewardUsdtPercent: '5',
+  withdrawAmount: '10',
+  withdrawFee: '0',
+  withdrawNet: '10',
+  withdrawAddress: 'TXdemo...abcd',
+  withdrawList: '10 USDT · 待审核'
 };
 
 export const fillPreviewVars = (text, extra = {}) => {

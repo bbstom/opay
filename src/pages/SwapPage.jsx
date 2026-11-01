@@ -66,8 +66,13 @@ const SwapPage = () => {
           <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-tr from-cyan-500 to-blue-600 rounded-xl mb-2 shadow-lg shadow-cyan-200">
             <ArrowDownUp className="text-white" size={24} />
           </div>
-          <h1 className="text-2xl font-black text-slate-900 mb-1">USDT 闪兑 TRX</h1>
-          <p className="text-sm text-slate-600">快速、安全、自动化</p>
+          <h1 className="text-2xl font-black text-slate-900 mb-1 flex items-center justify-center gap-2.5 flex-wrap">
+            USDT 闪兑 TRX
+            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-black tracking-wider text-white bg-[#FF060A] shadow-sm">
+              TRC20
+            </span>
+          </h1>
+          <p className="text-sm text-slate-600">仅支持波场 TRC20 网络，快速、安全、自动化</p>
         </div>
 
         <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-lg">
@@ -76,7 +81,12 @@ const SwapPage = () => {
             <div className="bg-gradient-to-r from-cyan-50 to-blue-50 rounded-lg p-3 mb-4 border border-cyan-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-slate-600">当前汇率</p>
+                  <p className="text-xs text-slate-600 flex items-center gap-1.5">
+                    当前汇率
+                    <span className="inline-flex items-center px-1.5 py-px rounded text-[10px] font-black tracking-wider text-white bg-[#FF060A]">
+                      TRC20
+                    </span>
+                  </p>
                   <p className="text-xl font-black text-slate-900">1 USDT = {rate.rate} TRX</p>
                 </div>
                 <button 
@@ -109,7 +119,12 @@ const SwapPage = () => {
               <div className="space-y-3">
                 {/* 地址 */}
                 <div>
-                  <label className="text-xs font-bold text-slate-600 block mb-1">收款地址（TRC20-USDT）</label>
+                  <label className="text-xs font-bold text-slate-600 mb-1 flex items-center gap-1.5">
+                    收款地址（USDT）
+                    <span className="inline-flex items-center px-1.5 py-px rounded text-[10px] font-black tracking-wider text-[#FF060A] bg-[#FFE8E8]">
+                      TRC20
+                    </span>
+                  </label>
                   <div className="flex items-center gap-2">
                     <div className="flex-1 bg-slate-50 rounded-lg px-3 py-2 font-mono text-xs text-slate-900 break-all border border-slate-200">
                       {walletAddress}

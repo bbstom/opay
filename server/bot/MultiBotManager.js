@@ -12,6 +12,7 @@ const ordersHandler = require('./handlers/orders');
 const ticketsHandler = require('./handlers/tickets');
 const energyHandler = require('./handlers/energy');
 const swapHandler = require('./handlers/swap');
+const rewardsHandler = require('./handlers/rewards');
 
 /**
  * 多 Bot 管理器
@@ -238,6 +239,10 @@ class MultiBotManager {
           return swapHandler.handleCallback(ctx);
         }
         
+        if (data.startsWith('reward_')) {
+          return rewardsHandler.handleCallback(ctx);
+        }
+
         if (data === 'account_info' || data === 'change_email') {
           if (data === 'account_info') {
             return startHandler.accountInfo(ctx);
@@ -295,6 +300,10 @@ class MultiBotManager {
         return ticketsHandler.handleTicketReply(ctx);
       case 'waiting_new_email':
         return startHandler.handleNewEmail(ctx);
+      case 'waiting_withdraw_amount':
+        return rewardsHandler.handleWithdrawAmount(ctx);
+      case 'waiting_withdraw_address':
+        return rewardsHandler.handleWithdrawAddress(ctx);
       case 'waiting_trx_deposit_hash':
         return energyHandler.handleDepositHash(ctx);
       case 'waiting_energy_balance_address':
