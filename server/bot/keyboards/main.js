@@ -106,7 +106,17 @@ function toReplyKeyboard(sourceButtons) {
   return typeof extra.persistent === 'function' ? extra.persistent() : extra;
 }
 
-// 主菜单：消息下方的 inline（旧消息 / 返回按钮仍可用）
+// 聊天输入框上方的常驻功能键（左下角那一排）
+async function getMainReplyKeyboard() {
+  try {
+    return toReplyKeyboard(await loadMenuButtons());
+  } catch (error) {
+    console.error('获取底部菜单失败:', error);
+    return toReplyKeyboard(DEFAULT_MENU_BUTTONS);
+  }
+}
+
+// 消息下方 inline：只给某一步的确认/返回，不再当主菜单
 async function getMainKeyboard() {
   try {
     const sourceButtons = await loadMenuButtons();
@@ -122,16 +132,6 @@ async function getMainKeyboard() {
   } catch (error) {
     console.error('获取主菜单失败:', error);
     return getDefaultMainKeyboard();
-  }
-}
-
-// 聊天框上方常驻底部菜单（已停用：主菜单改为消息下方 inline）
-async function getMainReplyKeyboard() {
-  try {
-    return toReplyKeyboard(await loadMenuButtons());
-  } catch (error) {
-    console.error('获取底部菜单失败:', error);
-    return toReplyKeyboard(DEFAULT_MENU_BUTTONS);
   }
 }
 

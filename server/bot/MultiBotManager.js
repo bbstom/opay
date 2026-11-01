@@ -30,13 +30,22 @@ class MultiBotManager {
    */
   async loadBotsFromDb() {
     const settings = await Settings.findOne();
+    const { normalizeTelegramBots } = require('../utils/telegramBots');
+    const dbBots = normalizeTelegramBots(settings && settings.telegramBots).filter(
+      (bot) => bot.enabled && bot.token
+    );
     const configs = getEnabledTelegramBots(settings);
     if (!configs.length) {
-      console.log('⚠️  未在后台配置 Telegram Bot Token，跳过 Bot 启动');
+      console.log('⚠️  未配置 Telegram Bot Token，跳过 Bot 启动');
+      console.log('👉 后台：Telegram Bot → 我的机器人，粘贴 BotFather Token 并保存');
       return;
     }
 
-    console.log(`🤖 从数据库加载 ${configs.length} 个 Bot 配置`);
+    if (!dbBots.length) {
+      console.log(`⚠️  数据库 telegramBots 为空，改用环境变量加载 ${configs.length} 个 Bot`);
+    } else {
+      console.log(`🤖 从数据库加载 ${configs.length} 个 Bot 配置`);
+    }
     configs.forEach((cfg, index) => {
       this.createBot(cfg.token, cfg.username || 'bot', index + 1);
     });
@@ -274,24 +283,41 @@ class MultiBotManager {
    * 处理文本消息
    */
   async handleText(ctx) {
-    const { getDockKeyboard, isDockMenuText } = require('./keyboards/main');
+    const {
+      findMenuButtonByText,
+      getMainReplyKeyboard,
+      isDockMenuText
+    } = require('./keyboards/main');
     const text = ctx.message?.text;
 
+    const clearFlow = () => {
+      if (!ctx.session) return;
+      delete ctx.session.state;
+      delete ctx.session.paymentData;
+      delete ctx.session.withdrawData;
+    };
+
     if (isDockMenuText(text)) {
-      if (ctx.session) {
-        delete ctx.session.state;
-        delete ctx.session.paymentData;
-        delete ctx.session.withdrawData;
-      }
-      if (!ctx.session?.user) {
-        return startHandler.start(ctx);
-      }
+      clearFlow();
+      if (!ctx.session?.user) return startHandler.start(ctx);
       return startHandler.menu(ctx);
+    }
+
+    const menuBtn = await findMenuButtonByText(text);
+    if (menuBtn) {
+      clearFlow();
+      if (!ctx.session?.user) return startHandler.start(ctx);
+      const action = String(menuBtn.action || '').trim();
+      if (menuBtn.type === 'url' || /^https?:\/\//i.test(action)) {
+        return ctx.reply(action);
+      }
+      const handled = await startHandler.dispatchAction(ctx, action);
+      if (handled) return;
     }
 
     const user = ctx.session?.user;
     if (!user) {
-      return ctx.reply('请先点底部「菜单」或发送 /start', getDockKeyboard());
+      return startHandler.start(ctx);
     }
 
     const state = ctx.session?.state;
@@ -324,8 +350,7 @@ class MultiBotManager {
       case 'waiting_energy_balance_amount':
         return energyHandler.handleBalanceAmount(ctx);
       default: {
-        const { getDockKeyboard } = require('./keyboards/main');
-        return ctx.reply('💡 点底部「菜单」打开功能', getDockKeyboard());
+        return ctx.reply('👇 请点底部按钮选择功能', await getMainReplyKeyboard());
       }
     }
   }
@@ -416,6 +441,19 @@ class MultiBotManager {
     process.once('SIGTERM', () => this.stop('SIGTERM'));
   }
 
+  async assertBotToken(bot, username, index) {
+    try {
+      const me = await bot.telegram.getMe();
+      console.log(`✅ Bot #${index} Token 有效: @${me.username || username}`);
+      return true;
+    } catch (error) {
+      const reason = error.response?.description || error.message;
+      console.error(`❌ Bot #${index} (@${username}) Token 无效: ${reason}`);
+      console.error('👉 到 BotFather 复制当前 Token，填进后台「我的机器人」后保存');
+      return false;
+    }
+  }
+
   /**
    * 启动所有 Bot（从数据库读 Token）
    */
@@ -456,6 +494,9 @@ class MultiBotManager {
 
         try {
           console.log(`🔄 正在启动 Bot #${index}: @${username}...`);
+          const tokenOk = await this.assertBotToken(bot, username, index);
+          if (!tokenOk) return;
+
           await registerCustomCommands(bot);
 
           bot.launch().then(() => {

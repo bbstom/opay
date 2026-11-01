@@ -1,26 +1,20 @@
 const User = require('../../models/User');
 const Settings = require('../../models/Settings');
 const { Markup } = require('telegraf');
-const { getMainKeyboard, getBackKeyboard, getDockKeyboard } = require('../keyboards/main');
+const { getBackKeyboard, getMainReplyKeyboard } = require('../keyboards/main');
 const contentService = require('../services/contentService');
 const rewardService = require('../../services/rewardService');
 
-async function ensureDock(ctx) {
-  try {
-    await ctx.reply('👇 点底部「菜单」可随时打开功能', getDockKeyboard());
-  } catch (error) {
-    console.error('设置底部菜单失败:', error);
-  }
+async function attachReplyMenu(ctx, text) {
+  const keyboard = await getMainReplyKeyboard();
+  await ctx.reply(text || '👇 请从底部选择功能', { parse_mode: 'HTML', ...keyboard });
 }
 
 async function sendFunctionMenu(ctx) {
-  const mainKeyboard = await getMainKeyboard();
-  const sent = await contentService.sendContent(ctx, 'main_menu', {}, mainKeyboard);
-  if (sent) return;
-  await ctx.reply(
-    `📋 <b>主菜单</b>\n\n👇 请选择您需要的服务`,
-    { parse_mode: 'HTML', ...mainKeyboard }
-  );
+  if (ctx.callbackQuery) {
+    await ctx.answerCbQuery().catch(() => {});
+  }
+  await attachReplyMenu(ctx);
 }
 
 // /start 命令处理
@@ -65,21 +59,18 @@ async function start(ctx) {
         // 先发送欢迎消息
         await ctx.reply(
           `👋 欢迎回来！正在为您执行操作...`,
-          { parse_mode: 'HTML' }
+          { parse_mode: 'HTML', ...(await getMainReplyKeyboard()) }
         );
-        await ensureDock(ctx);
         return await handleStartPayload(ctx, startPayload);
       }
       
-      // 尝试使用自定义内容
-      const mainKeyboard = await getMainKeyboard();
+      const replyMenu = await getMainReplyKeyboard();
       const sent = await contentService.sendContent(ctx, 'welcome_returning_user', {
         firstName,
         email: user.email,
         telegramId
-      }, mainKeyboard);
+      }, replyMenu);
 
-      // 如果没有自定义内容，使用默认消息
       if (!sent) {
         await ctx.reply(
           `🎉 <b>欢迎回来！</b>\n\n` +
@@ -89,11 +80,8 @@ async function start(ctx) {
           `<code>邮  箱：</code>${user.email}\n` +
           `<code>TG ID：</code>${telegramId}\n` +
           `━━━━━━━━━━━━━━━\n\n` +
-          `💡 请选择您需要的服务 👇`,
-          { 
-            parse_mode: 'HTML',
-            ...(await getMainKeyboard())
-          }
+          `👇 请从底部选择功能`,
+          { parse_mode: 'HTML', ...replyMenu }
         );
       }
     } else {
@@ -118,22 +106,19 @@ async function start(ctx) {
         // 先发送欢迎消息
         await ctx.reply(
           `🎊 欢迎使用 ${siteName}！账户已创建，正在为您执行操作...`,
-          { parse_mode: 'HTML' }
+          { parse_mode: 'HTML', ...(await getMainReplyKeyboard()) }
         );
-        await ensureDock(ctx);
         return await handleStartPayload(ctx, startPayload);
       }
 
-      // 尝试使用自定义内容
-      const mainKeyboard = await getMainKeyboard();
+      const replyMenu = await getMainReplyKeyboard();
       const sent = await contentService.sendContent(ctx, 'welcome_new_user', {
         siteName,
         username,
         telegramId,
         websiteUrl
-      }, mainKeyboard);
+      }, replyMenu);
 
-      // 如果没有自定义内容，使用默认消息
       if (!sent) {
         await ctx.reply(
           `🎊 <b>欢迎使用 ${siteName}！</b>\n\n` +
@@ -147,15 +132,11 @@ async function start(ctx) {
           `<code>1️⃣</code> 访问 ${websiteUrl}\n` +
           `<code>2️⃣</code> 点击 "使用 Telegram 登录"\n` +
           `<code>3️⃣</code> 授权后即可同步使用\n\n` +
-          `👇 请选择您需要的服务`,
-          { 
-            parse_mode: 'HTML',
-            ...(await getMainKeyboard())
-          }
+          `👇 请从底部选择功能`,
+          { parse_mode: 'HTML', ...replyMenu }
         );
       }
     }
-    await ensureDock(ctx);
   } catch (error) {
     console.error('Start 命令错误:', error);
     await ctx.reply('❌ 发生错误，请稍后重试');
@@ -343,7 +324,7 @@ async function handleLoginConfirm(ctx) {
   }
 }
 
-// /menu 命令处理：弹出功能按钮消息（底部「菜单」仍留着）
+// /menu：刷新输入框上方的常驻功能键
 async function menu(ctx) {
   if (!ctx.session) ctx.session = {};
   if (!ctx.session.user) {
@@ -622,50 +603,12 @@ async function handleNewEmail(ctx) {
 
 // 处理返回按钮
 async function handleBack(ctx) {
-  const action = ctx.callbackQuery.data;
-  
-  console.log('📥 收到返回按钮回调:', action);
-  console.log('🔍 ctx.callbackQuery 存在:', !!ctx.callbackQuery);
-  console.log('🔍 ctx.update.callback_query 存在:', !!ctx.update?.callback_query);
-
-  // 清除状态
   if (ctx.session) {
     delete ctx.session.state;
     delete ctx.session.paymentData;
     delete ctx.session.withdrawData;
   }
-
-  if (action === 'back_to_main' || action === 'back_main') {
-    console.log('🔄 处理返回主菜单');
-    
-    const mainKeyboard = await getMainKeyboard();
-    console.log('⌨️  主菜单键盘已获取');
-    
-    // 尝试使用自定义内容
-    console.log('🔍 尝试使用自定义内容: main_menu');
-    const sent = await contentService.sendContent(ctx, 'main_menu', {}, mainKeyboard);
-    console.log('📊 contentService.sendContent 返回:', sent);
-
-    // 如果没有自定义内容，使用默认消息
-    if (!sent) {
-      console.log('⚠️  没有自定义内容，使用默认消息');
-      const mainMenuText = `📋 <b>主菜单</b>\n\n` +
-        `👇 请选择您需要的服务`;
-      
-      const options = { 
-        parse_mode: 'HTML',
-        ...mainKeyboard
-      };
-      await ctx.reply(mainMenuText, options);
-      console.log('✅ 主菜单新消息已发送');
-    } else {
-      console.log('✅ 使用自定义内容成功');
-    }
-  }
-
-  console.log('📞 准备应答回调查询');
-  await ctx.answerCbQuery();
-  console.log('✅ 回调已应答');
+  await sendFunctionMenu(ctx);
 }
 
 function unwrapAction(action) {
@@ -773,7 +716,7 @@ async function handleStartPayload(ctx, payload) {
     console.error('处理群组跳转参数失败:', error);
     await ctx.reply(
       '❌ 操作失败，请重试',
-      await getMainKeyboard()
+      await getMainReplyKeyboard()
     );
   }
 }

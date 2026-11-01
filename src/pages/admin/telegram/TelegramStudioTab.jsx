@@ -23,7 +23,7 @@ import TelegramSceneEditor from './TelegramSceneEditor';
 import TelegramStudioPhone from './TelegramStudioPhone';
 
 const BOARDS = [
-  { id: 'menu', label: '主菜单' },
+  { id: 'menu', label: '底部菜单' },
   { id: 'scenes', label: '系统场景' },
   { id: 'pages', label: '自定义页面' }
 ];
@@ -295,7 +295,7 @@ export default function TelegramStudioTab() {
     setSaving(true);
     try {
       const synced = await persistMenu(menuDraft);
-      setNotice(synced ? '主菜单已保存。用户发 /start 或 /menu 后才会刷新。' : '主菜单已保存，斜杠同步失败（Bot 可能未启动）');
+      setNotice(synced ? '底部菜单已保存。用户发 /start 后输入框上方会刷新。' : '底部菜单已保存，斜杠同步失败（Bot 可能未启动）');
       await load();
     } catch (err) {
       alert(err.message);
@@ -329,7 +329,7 @@ export default function TelegramStudioTab() {
     try {
       const synced = await persistMenu(RECOMMENDED_MENU);
       setMenuDraft(RECOMMENDED_MENU);
-      setNotice(synced ? '已套用推荐菜单。用户发 /start 或 /menu 后出现在欢迎消息下面。' : '已套用推荐菜单，斜杠同步失败（Bot 可能未启动）');
+      setNotice(synced ? '已套用推荐菜单。用户发 /start 后出现在输入框上方。' : '已套用推荐菜单，斜杠同步失败（Bot 可能未启动）');
       await load();
     } catch (err) {
       alert(err.message);
@@ -402,7 +402,7 @@ export default function TelegramStudioTab() {
   return (
     <div>
       <PageHint title="工作室">
-        用户聊天框底部常驻只有「菜单」。点它之后，功能按钮以消息弹出。下面「主菜单」改的就是弹出来的那些按钮。系统场景只能改文案和按钮，不能改步骤顺序。
+        用户聊天输入框上方常驻功能按钮。下面「底部菜单」改的就是那一排。系统场景只能改文案和按钮，不能改步骤顺序。
       </PageHint>
       {notice ? <p className="text-xs text-emerald-600 mb-3">{notice}</p> : null}
 
@@ -481,8 +481,8 @@ export default function TelegramStudioTab() {
             <>
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div>
-                  <p className="text-sm font-bold text-slate-800">主菜单按钮</p>
-                  <p className="text-xs text-slate-500">每个按钮绑定：系统功能 / 自定义页面 / 打开链接</p>
+                  <p className="text-sm font-bold text-slate-800">底部菜单按钮</p>
+                  <p className="text-xs text-slate-500">出现在输入框上方。每个按钮绑定：系统功能 / 自定义页面 / 打开链接</p>
                 </div>
                 <div className="flex gap-2 shrink-0">
                   <button
@@ -499,7 +499,7 @@ export default function TelegramStudioTab() {
                     disabled={saving}
                     className="px-3 py-1.5 text-sm bg-cyan-500 text-white rounded-lg font-bold disabled:opacity-50"
                   >
-                    {saving ? '保存中' : '保存主菜单'}
+                    {saving ? '保存中' : '保存底部菜单'}
                   </button>
                 </div>
               </div>

@@ -80,6 +80,11 @@ export default function TelegramBotsTab() {
           <p className="text-xs text-slate-500 mt-1">
             Token 存在数据库，不写 .env。已保存的不会回显，留空表示不改。
           </p>
+          {!bots.some((bot) => bot.hasToken && bot.enabled !== false) && (
+            <p className="text-xs text-red-600 mt-2">
+              现在没有有效 Token，Telegram 不会有任何回复。从 BotFather 复制 Token 填到下面并保存。
+            </p>
+          )}
         </div>
         <button
           type="button"

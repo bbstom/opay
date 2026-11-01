@@ -49,8 +49,34 @@ const mergeTelegramBots = (existingRaw, incomingRaw) => {
     : merged;
 };
 
-const getEnabledTelegramBots = (settings) =>
-  normalizeTelegramBots(settings && settings.telegramBots).filter((bot) => bot.enabled && bot.token);
+const splitEnvList = (raw) =>
+  String(raw || '')
+    .split(/[,;\n]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const botsFromEnv = () => {
+  const tokens = splitEnvList(
+    process.env.TELEGRAM_BOT_TOKENS || process.env.TELEGRAM_BOT_TOKEN || ''
+  );
+  const names = splitEnvList(
+    process.env.TELEGRAM_BOT_USERNAMES || process.env.TELEGRAM_BOT_USERNAME || ''
+  );
+  return tokens.map((token, index) => ({
+    id: `env-${index + 1}`,
+    username: normalizeBotUsername(names[index] || ''),
+    token,
+    enabled: true
+  }));
+};
+
+const getEnabledTelegramBots = (settings) => {
+  const fromDb = normalizeTelegramBots(settings && settings.telegramBots).filter(
+    (bot) => bot.enabled && bot.token
+  );
+  if (fromDb.length) return fromDb;
+  return botsFromEnv().filter((bot) => bot.enabled && bot.token);
+};
 
 const getPrimaryTelegramBot = (settings) => getEnabledTelegramBots(settings)[0] || null;
 
@@ -76,6 +102,7 @@ module.exports = {
   normalizeTelegramBots,
   redactTelegramBots,
   mergeTelegramBots,
+  botsFromEnv,
   getEnabledTelegramBots,
   getPrimaryTelegramBot,
   fingerprintTelegramBots,

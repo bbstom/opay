@@ -158,7 +158,6 @@ class ContentService {
       const content = await this.getContent(key);
       
       if (!content) {
-        console.warn(`内容不存在: ${key}`);
         return false;
       }
 

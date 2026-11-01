@@ -65,7 +65,7 @@ export default function TelegramStudioPhone({
     from: 'bot',
     key,
     text: sceneText(key),
-    buttons: isMenuLine(key) ? liveMenu.filter((btn) => btn.enabled !== false) : sceneButtons(key)
+    buttons: isMenuLine(key) ? [] : sceneButtons(key)
   });
 
   const resetChat = () => {
@@ -97,7 +97,7 @@ export default function TelegramStudioPhone({
           return {
             ...line,
             text: line.key === viewKey ? previewText(liveText) : line.text,
-            buttons: liveMenu.filter((btn) => btn.enabled !== false)
+            buttons: []
           };
         }
         if (line.key === viewKey) {
@@ -152,10 +152,12 @@ export default function TelegramStudioPhone({
     onSelect?.({ kind: 'scene', key: line.key });
   };
 
-  const onDockMenu = async () => {
+  const onReplyMenu = async (btn) => {
     if (busy.current) return;
-    setLines((prev) => [...prev, { id: uid(), from: 'user', text: '📋 菜单' }]);
-    await pushBot(contentsByKey.main_menu ? 'main_menu' : welcomeKey, { kind: 'welcome' });
+    if (btn.type === 'url' || /^https?:\/\//i.test(String(btn.action || ''))) return;
+    setLines((prev) => [...prev, { id: uid(), from: 'user', text: btn.text || '…' }]);
+    const key = ACTION_SCENE[btn.action]?.key || btn.action;
+    await pushBot(key, { kind: 'menu', index: btn._index });
   };
 
   const menuIndex = selected?.kind === 'menu' ? selected.index : -1;
@@ -164,7 +166,7 @@ export default function TelegramStudioPhone({
   return (
     <TelegramDevice
       className="xl:sticky xl:top-4 order-first xl:order-last"
-      caption="底部「菜单」点下去会弹出功能"
+      caption="输入框上方就是功能按钮"
       title={botName}
       subtitle="bot"
       avatar={botLogo}
@@ -198,8 +200,9 @@ export default function TelegramStudioPhone({
       footer={
         <>
           <TgReplyKeyboard
-            rows={[{ row: 0, items: [{ _index: 0, text: '📋 菜单' }] }]}
-            onPress={onDockMenu}
+            rows={buttonsByRow(liveMenu.filter((btn) => btn.enabled !== false))}
+            activeIndex={menuIndex}
+            onPress={onReplyMenu}
           />
           <TgComposer />
         </>
