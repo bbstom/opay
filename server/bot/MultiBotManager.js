@@ -283,11 +283,7 @@ class MultiBotManager {
    * 处理文本消息
    */
   async handleText(ctx) {
-    const {
-      findMenuButtonByText,
-      getMainReplyKeyboard,
-      isDockMenuText
-    } = require('./keyboards/main');
+    const { findMenuButtonByText } = require('./keyboards/main');
     const text = ctx.message?.text;
 
     const clearFlow = () => {
@@ -297,7 +293,8 @@ class MultiBotManager {
       delete ctx.session.withdrawData;
     };
 
-    if (isDockMenuText(text)) {
+    const trimmed = String(text || '').trim();
+    if (trimmed === '📋 菜单' || trimmed === '菜单') {
       clearFlow();
       if (!ctx.session?.user) return startHandler.start(ctx);
       return startHandler.menu(ctx);
@@ -350,7 +347,7 @@ class MultiBotManager {
       case 'waiting_energy_balance_amount':
         return energyHandler.handleBalanceAmount(ctx);
       default: {
-        return ctx.reply('👇 请点底部按钮选择功能', await getMainReplyKeyboard());
+        return ctx.reply('👇 请点击消息中的按钮，或发送 /start', { parse_mode: 'HTML' });
       }
     }
   }

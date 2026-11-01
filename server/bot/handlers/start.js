@@ -1,20 +1,30 @@
 const User = require('../../models/User');
 const Settings = require('../../models/Settings');
 const { Markup } = require('telegraf');
-const { getBackKeyboard, getMainReplyKeyboard } = require('../keyboards/main');
+const { getMainKeyboard, getBackKeyboard } = require('../keyboards/main');
 const contentService = require('../services/contentService');
 const rewardService = require('../../services/rewardService');
 
-async function attachReplyMenu(ctx, text) {
-  const keyboard = await getMainReplyKeyboard();
-  await ctx.reply(text || '👇 请从底部选择功能', { parse_mode: 'HTML', ...keyboard });
+async function stripReplyKeyboard(ctx) {
+  try {
+    const sent = await ctx.reply('\u200B', Markup.removeKeyboard());
+    if (sent?.message_id) {
+      await ctx.deleteMessage(sent.message_id).catch(() => {});
+    }
+  } catch (_) {}
 }
 
 async function sendFunctionMenu(ctx) {
   if (ctx.callbackQuery) {
     await ctx.answerCbQuery().catch(() => {});
   }
-  await attachReplyMenu(ctx);
+  const mainKeyboard = await getMainKeyboard();
+  const sent = await contentService.sendContent(ctx, 'main_menu', {}, mainKeyboard);
+  if (sent) return;
+  await ctx.reply(
+    `📋 <b>主菜单</b>\n\n👇 请选择您需要的服务`,
+    { parse_mode: 'HTML', ...mainKeyboard }
+  );
 }
 
 // /start 命令处理
@@ -36,6 +46,8 @@ async function start(ctx) {
     if (!ctx.session) {
       ctx.session = {};
     }
+
+    await stripReplyKeyboard(ctx);
 
     // 获取系统设置
     const settings = await Settings.findOne();
@@ -59,17 +71,17 @@ async function start(ctx) {
         // 先发送欢迎消息
         await ctx.reply(
           `👋 欢迎回来！正在为您执行操作...`,
-          { parse_mode: 'HTML', ...(await getMainReplyKeyboard()) }
+          { parse_mode: 'HTML', ...(await getMainKeyboard()) }
         );
         return await handleStartPayload(ctx, startPayload);
       }
       
-      const replyMenu = await getMainReplyKeyboard();
+      const mainKeyboard = await getMainKeyboard();
       const sent = await contentService.sendContent(ctx, 'welcome_returning_user', {
         firstName,
         email: user.email,
         telegramId
-      }, replyMenu);
+      }, mainKeyboard);
 
       if (!sent) {
         await ctx.reply(
@@ -80,8 +92,8 @@ async function start(ctx) {
           `<code>邮  箱：</code>${user.email}\n` +
           `<code>TG ID：</code>${telegramId}\n` +
           `━━━━━━━━━━━━━━━\n\n` +
-          `👇 请从底部选择功能`,
-          { parse_mode: 'HTML', ...replyMenu }
+          `👇 请选择您需要的服务`,
+          { parse_mode: 'HTML', ...mainKeyboard }
         );
       }
     } else {
@@ -106,18 +118,18 @@ async function start(ctx) {
         // 先发送欢迎消息
         await ctx.reply(
           `🎊 欢迎使用 ${siteName}！账户已创建，正在为您执行操作...`,
-          { parse_mode: 'HTML', ...(await getMainReplyKeyboard()) }
+          { parse_mode: 'HTML', ...(await getMainKeyboard()) }
         );
         return await handleStartPayload(ctx, startPayload);
       }
 
-      const replyMenu = await getMainReplyKeyboard();
+      const mainKeyboard = await getMainKeyboard();
       const sent = await contentService.sendContent(ctx, 'welcome_new_user', {
         siteName,
         username,
         telegramId,
         websiteUrl
-      }, replyMenu);
+      }, mainKeyboard);
 
       if (!sent) {
         await ctx.reply(
@@ -132,8 +144,8 @@ async function start(ctx) {
           `<code>1️⃣</code> 访问 ${websiteUrl}\n` +
           `<code>2️⃣</code> 点击 "使用 Telegram 登录"\n` +
           `<code>3️⃣</code> 授权后即可同步使用\n\n` +
-          `👇 请从底部选择功能`,
-          { parse_mode: 'HTML', ...replyMenu }
+          `👇 请选择您需要的服务`,
+          { parse_mode: 'HTML', ...mainKeyboard }
         );
       }
     }
@@ -324,7 +336,7 @@ async function handleLoginConfirm(ctx) {
   }
 }
 
-// /menu：刷新输入框上方的常驻功能键
+// /menu：消息下面的功能按钮
 async function menu(ctx) {
   if (!ctx.session) ctx.session = {};
   if (!ctx.session.user) {
@@ -333,6 +345,7 @@ async function menu(ctx) {
   delete ctx.session.state;
   delete ctx.session.paymentData;
   delete ctx.session.withdrawData;
+  await stripReplyKeyboard(ctx);
   await sendFunctionMenu(ctx);
 }
 
@@ -716,7 +729,7 @@ async function handleStartPayload(ctx, payload) {
     console.error('处理群组跳转参数失败:', error);
     await ctx.reply(
       '❌ 操作失败，请重试',
-      await getMainReplyKeyboard()
+      await getMainKeyboard()
     );
   }
 }

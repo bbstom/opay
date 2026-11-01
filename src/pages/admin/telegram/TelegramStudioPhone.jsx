@@ -11,7 +11,6 @@ import {
   TelegramDevice,
   TgChatBubble,
   TgComposer,
-  TgReplyKeyboard,
   TgTyping
 } from './telegramUi';
 
@@ -65,7 +64,7 @@ export default function TelegramStudioPhone({
     from: 'bot',
     key,
     text: sceneText(key),
-    buttons: isMenuLine(key) ? [] : sceneButtons(key)
+    buttons: isMenuLine(key) ? liveMenu.filter((btn) => btn.enabled !== false) : sceneButtons(key)
   });
 
   const resetChat = () => {
@@ -97,7 +96,7 @@ export default function TelegramStudioPhone({
           return {
             ...line,
             text: line.key === viewKey ? previewText(liveText) : line.text,
-            buttons: []
+            buttons: liveMenu.filter((btn) => btn.enabled !== false)
           };
         }
         if (line.key === viewKey) {
@@ -152,21 +151,13 @@ export default function TelegramStudioPhone({
     onSelect?.({ kind: 'scene', key: line.key });
   };
 
-  const onReplyMenu = async (btn) => {
-    if (busy.current) return;
-    if (btn.type === 'url' || /^https?:\/\//i.test(String(btn.action || ''))) return;
-    setLines((prev) => [...prev, { id: uid(), from: 'user', text: btn.text || '…' }]);
-    const key = ACTION_SCENE[btn.action]?.key || btn.action;
-    await pushBot(key, { kind: 'menu', index: btn._index });
-  };
-
   const menuIndex = selected?.kind === 'menu' ? selected.index : -1;
   const inlineIndex = selected?.kind === 'inline' ? selected.index : -1;
 
   return (
     <TelegramDevice
       className="xl:sticky xl:top-4 order-first xl:order-last"
-      caption="输入框上方就是功能按钮"
+      caption="消息下面的功能按钮"
       title={botName}
       subtitle="bot"
       avatar={botLogo}
@@ -197,16 +188,7 @@ export default function TelegramStudioPhone({
           </button>
         </div>
       }
-      footer={
-        <>
-          <TgReplyKeyboard
-            rows={buttonsByRow(liveMenu.filter((btn) => btn.enabled !== false))}
-            activeIndex={menuIndex}
-            onPress={onReplyMenu}
-          />
-          <TgComposer />
-        </>
-      }
+      footer={<TgComposer />}
     >
       <p className="text-center text-[10px] text-slate-600/80 my-2">
           <span className="bg-black/10 rounded-full px-2 py-0.5">今天</span>

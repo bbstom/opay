@@ -84,39 +84,7 @@ async function loadMenuButtons() {
   return DEFAULT_MENU_BUTTONS;
 }
 
-const DOCK_MENU_TEXT = '📋 菜单';
-
-function getDockKeyboard() {
-  let extra = Markup.keyboard([[DOCK_MENU_TEXT]]).resize();
-  if (typeof extra.persistent === 'function') extra = extra.persistent();
-  return extra;
-}
-
-function isDockMenuText(text) {
-  const value = String(text || '').trim();
-  if (!value) return false;
-  if (value === DOCK_MENU_TEXT || value === '菜单') return true;
-  return /^\/menu(@\w+)?$/i.test(value);
-}
-
-function toReplyKeyboard(sourceButtons) {
-  const rows = groupEnabledButtons(sourceButtons);
-  const keyboard = rows.map((row) => row.map((btn) => Markup.button.text(btn.text)));
-  const extra = Markup.keyboard(keyboard.length ? keyboard : [[DOCK_MENU_TEXT]]).resize();
-  return typeof extra.persistent === 'function' ? extra.persistent() : extra;
-}
-
-// 聊天输入框上方的常驻功能键（左下角那一排）
-async function getMainReplyKeyboard() {
-  try {
-    return toReplyKeyboard(await loadMenuButtons());
-  } catch (error) {
-    console.error('获取底部菜单失败:', error);
-    return toReplyKeyboard(DEFAULT_MENU_BUTTONS);
-  }
-}
-
-// 消息下方 inline：只给某一步的确认/返回，不再当主菜单
+// 消息下方 inline 主菜单
 async function getMainKeyboard() {
   try {
     const sourceButtons = await loadMenuButtons();
@@ -232,11 +200,7 @@ function getStatusEmoji(status) {
 }
 
 module.exports = {
-  DOCK_MENU_TEXT,
-  getDockKeyboard,
-  isDockMenuText,
   getMainKeyboard,
-  getMainReplyKeyboard,
   findMenuButtonByText,
   getPaymentMethodKeyboard,
   getConfirmKeyboard,
