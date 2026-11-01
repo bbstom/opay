@@ -95,6 +95,7 @@ async function registerCustomCommands(bot) {
 
     // 设置 Bot 命令
     await bot.telegram.setMyCommands(botCommands);
+    await bot.telegram.setChatMenuButton({ type: 'commands' }).catch(() => {});
     console.log('✅ 已设置 Bot 快捷指令:', botCommands.length, '个');
     
     // 打印命令列表
@@ -127,6 +128,7 @@ async function setDefaultCommands(bot) {
 
   try {
     await bot.telegram.setMyCommands(defaultCommands);
+    await bot.telegram.setChatMenuButton({ type: 'commands' }).catch(() => {});
     console.log('✅ 已设置默认 Bot 命令');
   } catch (error) {
     console.error('❌ 设置默认命令失败:', error);

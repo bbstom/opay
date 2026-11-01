@@ -163,11 +163,6 @@ class MultiBotManager {
         
         if (user) {
           ctx.session.user = user;
-        } else {
-          return ctx.reply(
-            '❌ 请先使用 /start 命令开始使用',
-            { reply_markup: { remove_keyboard: true } }
-          );
         }
       }
 
@@ -279,9 +274,24 @@ class MultiBotManager {
    * 处理文本消息
    */
   async handleText(ctx) {
+    const { getDockKeyboard, isDockMenuText } = require('./keyboards/main');
+    const text = ctx.message?.text;
+
+    if (isDockMenuText(text)) {
+      if (ctx.session) {
+        delete ctx.session.state;
+        delete ctx.session.paymentData;
+        delete ctx.session.withdrawData;
+      }
+      if (!ctx.session?.user) {
+        return startHandler.start(ctx);
+      }
+      return startHandler.menu(ctx);
+    }
+
     const user = ctx.session?.user;
     if (!user) {
-      return ctx.reply('请先使用 /start 命令');
+      return ctx.reply('请先点底部「菜单」或发送 /start', getDockKeyboard());
     }
 
     const state = ctx.session?.state;
@@ -314,11 +324,8 @@ class MultiBotManager {
       case 'waiting_energy_balance_amount':
         return energyHandler.handleBalanceAmount(ctx);
       default: {
-        const { getMainKeyboard } = require('./keyboards/main');
-        return ctx.reply(
-          '💡 请点消息下面的按钮，或发送 /menu 打开菜单',
-          await getMainKeyboard()
-        );
+        const { getDockKeyboard } = require('./keyboards/main');
+        return ctx.reply('💡 点底部「菜单」打开功能', getDockKeyboard());
       }
     }
   }

@@ -84,7 +84,7 @@ function MenuEditor({ buttons, onChange, actions, pages, selectedIndex, onSelect
   return (
     <div className="space-y-3">
       <p className="text-xs text-slate-500">
-        用户打开 Bot 后，这些按钮挂在欢迎消息下面。欢迎文案去「系统场景 → 开场」改。
+        用户点底部「菜单」后，这些按钮出现在消息下面。欢迎文案去「系统场景 → 开场」改。
       </p>
       {rows.map(({ row, items }) => (
         <div key={row} className="rounded-lg border border-slate-200 p-2 space-y-2">
@@ -402,7 +402,7 @@ export default function TelegramStudioTab() {
   return (
     <div>
       <PageHint title="工作室">
-        三块分开改：主菜单、系统场景、自定义页面。不用先点手机。主菜单挂在欢迎消息下面，不是聊天框底部常驻。系统场景只能改文案和按钮，不能改步骤顺序。
+        用户聊天框底部常驻只有「菜单」。点它之后，功能按钮以消息弹出。下面「主菜单」改的就是弹出来的那些按钮。系统场景只能改文案和按钮，不能改步骤顺序。
       </PageHint>
       {notice ? <p className="text-xs text-emerald-600 mb-3">{notice}</p> : null}
 

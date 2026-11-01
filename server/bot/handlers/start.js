@@ -1,19 +1,26 @@
 const User = require('../../models/User');
 const Settings = require('../../models/Settings');
 const { Markup } = require('telegraf');
-const { getMainKeyboard, getBackKeyboard } = require('../keyboards/main');
+const { getMainKeyboard, getBackKeyboard, getDockKeyboard } = require('../keyboards/main');
 const contentService = require('../services/contentService');
 const rewardService = require('../../services/rewardService');
 
-async function clearReplyKeyboard(ctx) {
-  if (ctx.session?.replyKbCleared) return;
+async function ensureDock(ctx) {
   try {
-    const msg = await ctx.reply(String.fromCharCode(0x2060), Markup.removeKeyboard());
-    if (ctx.session) ctx.session.replyKbCleared = true;
-    await ctx.telegram.deleteMessage(ctx.chat.id, msg.message_id).catch(() => {});
+    await ctx.reply('👇 点底部「菜单」可随时打开功能', getDockKeyboard());
   } catch (error) {
-    if (ctx.session) ctx.session.replyKbCleared = true;
+    console.error('设置底部菜单失败:', error);
   }
+}
+
+async function sendFunctionMenu(ctx) {
+  const mainKeyboard = await getMainKeyboard();
+  const sent = await contentService.sendContent(ctx, 'main_menu', {}, mainKeyboard);
+  if (sent) return;
+  await ctx.reply(
+    `📋 <b>主菜单</b>\n\n👇 请选择您需要的服务`,
+    { parse_mode: 'HTML', ...mainKeyboard }
+  );
 }
 
 // /start 命令处理
@@ -35,8 +42,6 @@ async function start(ctx) {
     if (!ctx.session) {
       ctx.session = {};
     }
-
-    await clearReplyKeyboard(ctx);
 
     // 获取系统设置
     const settings = await Settings.findOne();
@@ -62,8 +67,7 @@ async function start(ctx) {
           `👋 欢迎回来！正在为您执行操作...`,
           { parse_mode: 'HTML' }
         );
-        
-        // 根据参数执行相应操作
+        await ensureDock(ctx);
         return await handleStartPayload(ctx, startPayload);
       }
       
@@ -116,8 +120,7 @@ async function start(ctx) {
           `🎊 欢迎使用 ${siteName}！账户已创建，正在为您执行操作...`,
           { parse_mode: 'HTML' }
         );
-        
-        // 根据参数执行相应操作
+        await ensureDock(ctx);
         return await handleStartPayload(ctx, startPayload);
       }
 
@@ -152,6 +155,7 @@ async function start(ctx) {
         );
       }
     }
+    await ensureDock(ctx);
   } catch (error) {
     console.error('Start 命令错误:', error);
     await ctx.reply('❌ 发生错误，请稍后重试');
@@ -339,30 +343,16 @@ async function handleLoginConfirm(ctx) {
   }
 }
 
-// /menu 命令处理
+// /menu 命令处理：弹出功能按钮消息（底部「菜单」仍留着）
 async function menu(ctx) {
-  const user = ctx.session?.user;
-  if (!user) {
-    return ctx.reply('请先使用 /start 命令');
+  if (!ctx.session) ctx.session = {};
+  if (!ctx.session.user) {
+    return start(ctx);
   }
-
-  await clearReplyKeyboard(ctx);
-
-  // 尝试使用自定义内容
-  const mainKeyboard = await getMainKeyboard();
-  const sent = await contentService.sendContent(ctx, 'main_menu', {}, mainKeyboard);
-
-  // 如果没有自定义内容，使用默认消息
-  if (!sent) {
-    await ctx.reply(
-      `📋 <b>主菜单</b>\n\n` +
-      `👇 请选择您需要的服务`,
-      { 
-        parse_mode: 'HTML',
-        ...(await getMainKeyboard())
-      }
-    );
-  }
+  delete ctx.session.state;
+  delete ctx.session.paymentData;
+  delete ctx.session.withdrawData;
+  await sendFunctionMenu(ctx);
 }
 
 // /help 命令处理
@@ -426,13 +416,7 @@ async function cancel(ctx) {
     delete ctx.session.withdrawData;
   }
 
-  await clearReplyKeyboard(ctx);
-
-  await ctx.reply(
-    '❌ 操作已取消\n\n' +
-    '请选择其他功能：',
-    await getMainKeyboard()
-  );
+  await sendFunctionMenu(ctx);
 }
 
 // 个人中心
@@ -805,6 +789,5 @@ module.exports = {
   changeEmail,
   handleNewEmail,
   runMenuAction,
-  dispatchAction,
-  clearReplyKeyboard
+  dispatchAction
 };

@@ -84,10 +84,25 @@ async function loadMenuButtons() {
   return DEFAULT_MENU_BUTTONS;
 }
 
+const DOCK_MENU_TEXT = '📋 菜单';
+
+function getDockKeyboard() {
+  let extra = Markup.keyboard([[DOCK_MENU_TEXT]]).resize();
+  if (typeof extra.persistent === 'function') extra = extra.persistent();
+  return extra;
+}
+
+function isDockMenuText(text) {
+  const value = String(text || '').trim();
+  if (!value) return false;
+  if (value === DOCK_MENU_TEXT || value === '菜单') return true;
+  return /^\/menu(@\w+)?$/i.test(value);
+}
+
 function toReplyKeyboard(sourceButtons) {
   const rows = groupEnabledButtons(sourceButtons);
   const keyboard = rows.map((row) => row.map((btn) => Markup.button.text(btn.text)));
-  const extra = Markup.keyboard(keyboard.length ? keyboard : [['📅 签到', '🎁 邀请', '💸 提现']]).resize();
+  const extra = Markup.keyboard(keyboard.length ? keyboard : [[DOCK_MENU_TEXT]]).resize();
   return typeof extra.persistent === 'function' ? extra.persistent() : extra;
 }
 
@@ -217,6 +232,9 @@ function getStatusEmoji(status) {
 }
 
 module.exports = {
+  DOCK_MENU_TEXT,
+  getDockKeyboard,
+  isDockMenuText,
   getMainKeyboard,
   getMainReplyKeyboard,
   findMenuButtonByText,

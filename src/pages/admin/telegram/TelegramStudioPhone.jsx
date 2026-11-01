@@ -11,6 +11,7 @@ import {
   TelegramDevice,
   TgChatBubble,
   TgComposer,
+  TgReplyKeyboard,
   TgTyping
 } from './telegramUi';
 
@@ -151,13 +152,19 @@ export default function TelegramStudioPhone({
     onSelect?.({ kind: 'scene', key: line.key });
   };
 
+  const onDockMenu = async () => {
+    if (busy.current) return;
+    setLines((prev) => [...prev, { id: uid(), from: 'user', text: '📋 菜单' }]);
+    await pushBot(contentsByKey.main_menu ? 'main_menu' : welcomeKey, { kind: 'welcome' });
+  };
+
   const menuIndex = selected?.kind === 'menu' ? selected.index : -1;
   const inlineIndex = selected?.kind === 'inline' ? selected.index : -1;
 
   return (
     <TelegramDevice
       className="xl:sticky xl:top-4 order-first xl:order-last"
-      caption="点气泡或按钮，像在 Telegram 里点"
+      caption="底部「菜单」点下去会弹出功能"
       title={botName}
       subtitle="bot"
       avatar={botLogo}
@@ -188,7 +195,15 @@ export default function TelegramStudioPhone({
           </button>
         </div>
       }
-      footer={<TgComposer />}
+      footer={
+        <>
+          <TgReplyKeyboard
+            rows={[{ row: 0, items: [{ _index: 0, text: '📋 菜单' }] }]}
+            onPress={onDockMenu}
+          />
+          <TgComposer />
+        </>
+      }
     >
       <p className="text-center text-[10px] text-slate-600/80 my-2">
           <span className="bg-black/10 rounded-full px-2 py-0.5">今天</span>
