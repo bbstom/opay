@@ -92,17 +92,36 @@ export const unwrapAction = (raw) => {
   const value = String(raw || '').trim();
   if (value.startsWith('scene:')) return value.slice(6);
   if (value.startsWith('action:')) return value.slice(7);
+  if (value.startsWith('submenu:')) return value.slice(8);
   return value;
 };
 
-// 按钮只分三种：系统功能 / 自定义页（含系统场景 key）/ 链接
+export const SUBMENU_PREFIX = 'sub_';
+export const isSubmenuKey = (key) => String(key || '').startsWith(SUBMENU_PREFIX);
+export const newSubmenuKey = () => `${SUBMENU_PREFIX}${Date.now().toString(36)}`;
+
+// 主菜单点进去后的第二层；子按钮仍可绑这些系统步骤
+export const FLOW_ACTIONS = {
+  energy_chain: { description: '能量：链上转账' },
+  energy_balance: { description: '能量：余额租赁' },
+  energy_deposit: { description: '能量：充值 TRX' },
+  energy_wallet: { description: '能量：我的余额' }
+};
+
+export const NAV_ACTIONS = {
+  back_to_main: { description: '返回主菜单' }
+};
+
 export const detectBind = (type, data) => {
   const raw = String(data || '').trim();
   if (type === 'url' || /^https?:\/\//i.test(raw) || raw.startsWith('t.me/') || raw.startsWith('@')) {
     return { kind: 'url', value: raw };
   }
   const value = unwrapAction(raw);
-  if (type === 'system' || ACTION_SLASH[value] || ACTION_SCENE[value] || NAV_ACTIONS[value]) {
+  if (type === 'submenu' || isSubmenuKey(raw) || isSubmenuKey(value)) {
+    return { kind: 'submenu', value: isSubmenuKey(value) ? value : raw };
+  }
+  if (type === 'system' || ACTION_SLASH[value] || ACTION_SCENE[value] || NAV_ACTIONS[value] || FLOW_ACTIONS[value]) {
     return { kind: 'system', value };
   }
   return { kind: 'page', value };
@@ -110,17 +129,62 @@ export const detectBind = (type, data) => {
 
 export const toMenuButton = (btn, bind) => {
   if (bind.kind === 'url') return { ...btn, type: 'url', action: bind.value };
-  if (bind.kind === 'page') return { ...btn, type: 'callback', action: bind.value, showInSlash: false };
+  if (bind.kind === 'page' || bind.kind === 'submenu') {
+    return { ...btn, type: 'callback', action: bind.value, showInSlash: false };
+  }
   return { ...btn, type: 'system', action: bind.value };
+};
+
+export const bindCaption = (bind, { actions = [], pages = [] } = {}) => {
+  if (bind.kind === 'submenu') return '子菜单';
+  if (bind.kind === 'url') return '链接';
+  if (bind.kind === 'page') {
+    const page = pages.find((item) => item.key === bind.value);
+    const scene = CORE_SCENES.find((item) => item.key === bind.value);
+    return page?.name || scene?.title || bind.value || '页面';
+  }
+  const action = actions.find((item) => item.value === bind.value);
+  return action?.label
+    || ACTION_SLASH[bind.value]?.description
+    || FLOW_ACTIONS[bind.value]?.description
+    || NAV_ACTIONS[bind.value]?.description
+    || bind.value
+    || '功能';
+};
+
+export const seedSubmenuDraft = (btn, previousBind) => {
+  const key = isSubmenuKey(btn?.action) ? btn.action : newSubmenuKey();
+  const title = String(btn?.text || '菜单').trim() || '菜单';
+  const buttons = [];
+  if (previousBind?.kind === 'system' && previousBind.value) {
+    buttons.push({
+      text: '进入功能',
+      type: 'callback',
+      data: previousBind.value,
+      row: 0,
+      col: 0
+    });
+  }
+  buttons.push({
+    text: '« 返回主菜单',
+    type: 'callback',
+    data: 'back_to_main',
+    row: buttons.length ? 1 : 0,
+    col: 0
+  });
+  return {
+    key,
+    name: `${title} 子菜单`,
+    text: `<b>${title}</b>\n\n请选择`,
+    buttons,
+    mediaUrl: '',
+    category: 'custom'
+  };
 };
 
 export const toInlineButton = (btn, bind) => {
   if (bind.kind === 'url') return { ...btn, type: 'url', data: bind.value };
   return { ...btn, type: 'callback', data: bind.value };
-};
-
-export const NAV_ACTIONS = {
-  back_to_main: { description: '返回主菜单' }
 };
 
 export const WELCOME_VERSIONS = [

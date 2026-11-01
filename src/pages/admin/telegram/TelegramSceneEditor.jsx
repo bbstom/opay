@@ -24,6 +24,7 @@ export default function TelegramSceneEditor({
   onSave,
   onCancel,
   saveLabel = '保存',
+  showSave = true,
   hint
 }) {
   const insertVar = (key) => {
@@ -201,6 +202,7 @@ export default function TelegramSceneEditor({
         </div>
       ) : null}
 
+      {showSave ? (
       <div className="flex justify-end gap-2 pt-1">
         {onCancel ? (
           <button type="button" onClick={onCancel} className="px-3 py-1.5 text-sm border border-slate-300 rounded-lg">
@@ -216,6 +218,7 @@ export default function TelegramSceneEditor({
           {saving ? '保存中' : saveLabel}
         </button>
       </div>
+      ) : null}
     </div>
   );
 }

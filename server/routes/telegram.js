@@ -7,6 +7,7 @@ const TelegramMenu = require('../models/TelegramMenu');
 const TelegramContent = require('../models/TelegramContent');
 const User = require('../models/User');
 const { getBotInstance } = require('../bot/MultiBotManager');
+const contentService = require('../bot/services/contentService');
 const { withRewardMenuButtons, DEFAULT_MENU_BUTTONS } = require('../bot/keyboards/main');
 
 const router = express.Router();
@@ -539,7 +540,12 @@ router.get('/menu/system-actions', async (req, res) => {
       { value: 'help_center', label: '帮助中心', icon: '❓', category: '帮助' },
       { value: 'reward_checkin', label: '每日签到', icon: '📅', category: '奖励' },
       { value: 'reward_invite', label: '邀请好友', icon: '🎁', category: '奖励' },
-      { value: 'reward_withdraw', label: 'USDT 提现', icon: '💸', category: '奖励' }
+      { value: 'reward_withdraw', label: 'USDT 提现', icon: '💸', category: '奖励' },
+      { value: 'energy_chain', label: '能量：链上转账', icon: '⚡', category: '服务' },
+      { value: 'energy_balance', label: '能量：余额租赁', icon: '💎', category: '服务' },
+      { value: 'energy_deposit', label: '能量：充值 TRX', icon: '➕', category: '服务' },
+      { value: 'energy_wallet', label: '能量：我的余额', icon: '👛', category: '服务' },
+      { value: 'back_to_main', label: '返回主菜单', icon: '🔙', category: '导航' }
     ];
 
     res.json(systemActions);
@@ -590,6 +596,7 @@ router.post('/contents', async (req, res) => {
         req.body,
         { new: true, runValidators: true }
       );
+      contentService.clearCache(key);
       return res.status(200).json({ 
         message: '内容已更新',
         content: updated,
@@ -599,6 +606,7 @@ router.post('/contents', async (req, res) => {
       // 不存在，创建
       console.log(`✨ 创建新内容 "${key}"`);
       const content = await TelegramContent.create(req.body);
+      contentService.clearCache(key);
       return res.status(201).json({ 
         message: '内容已创建',
         content,
@@ -624,6 +632,7 @@ router.put('/contents/:key', async (req, res) => {
       return res.status(404).json({ error: '内容不存在' });
     }
 
+    contentService.clearCache(req.params.key);
     res.json(content);
   } catch (error) {
     res.status(400).json({ error: error.message });

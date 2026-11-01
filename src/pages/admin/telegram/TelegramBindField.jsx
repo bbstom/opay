@@ -1,24 +1,32 @@
-import { ACTION_SLASH, CORE_SCENES, NAV_ACTIONS } from './telegramStudio';
+import { ACTION_SLASH, CORE_SCENES, FLOW_ACTIONS, NAV_ACTIONS, isSubmenuKey } from './telegramStudio';
 
 export default function TelegramBindField({
   kind,
   value,
   onChange,
   actions = [],
-  pages = []
+  pages = [],
+  allowSubmenu = false
 }) {
   const systemOptions = (() => {
     const base = actions.length
       ? actions
       : Object.entries(ACTION_SLASH).map(([item, meta]) => ({ value: item, label: meta.description }));
-    const extras = Object.entries(NAV_ACTIONS).map(([item, meta]) => ({ value: item, label: meta.description }));
+    const extras = [
+      ...Object.entries(FLOW_ACTIONS).map(([item, meta]) => ({ value: item, label: meta.description })),
+      ...Object.entries(NAV_ACTIONS).map(([item, meta]) => ({ value: item, label: meta.description }))
+    ];
     const seen = new Set(base.map((item) => item.value));
     return base.concat(extras.filter((item) => !seen.has(item.value)));
   })();
 
   const setKind = (nextKind) => {
     if (nextKind === 'system') {
-      onChange(nextKind, ACTION_SLASH[value] || NAV_ACTIONS[value] ? value : systemOptions[0]?.value || 'payment_usdt');
+      onChange(nextKind, ACTION_SLASH[value] || FLOW_ACTIONS[value] || NAV_ACTIONS[value] ? value : systemOptions[0]?.value || 'payment_usdt');
+      return;
+    }
+    if (nextKind === 'submenu') {
+      onChange(nextKind, isSubmenuKey(value) ? value : '');
       return;
     }
     if (nextKind === 'page') {
@@ -33,9 +41,10 @@ export default function TelegramBindField({
       <select
         value={kind}
         onChange={(e) => setKind(e.target.value)}
-        className="w-[92px] shrink-0 bg-slate-50 border border-slate-200 rounded px-1.5 py-1.5 text-xs"
+        className="w-[100px] shrink-0 bg-slate-50 border border-slate-200 rounded px-1.5 py-1.5 text-xs"
       >
-        <option value="system">系统功能</option>
+        <option value="system">{allowSubmenu ? '直达功能' : '系统功能'}</option>
+        {allowSubmenu ? <option value="submenu">子菜单</option> : null}
         <option value="page">自定义页</option>
         <option value="url">打开链接</option>
       </select>
@@ -55,6 +64,10 @@ export default function TelegramBindField({
             <option value={value}>{value}</option>
           ) : null}
         </select>
+      ) : null}
+
+      {kind === 'submenu' ? (
+        <span className="flex-1 text-[11px] text-slate-500 px-1 py-1.5">点进去出现第二层</span>
       ) : null}
 
       {kind === 'page' ? (

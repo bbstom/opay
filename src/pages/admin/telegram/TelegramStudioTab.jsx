@@ -14,7 +14,10 @@ import {
   welcomeKeyOf,
   buttonsByRow,
   detectBind,
-  toMenuButton
+  toMenuButton,
+  bindCaption,
+  seedSubmenuDraft,
+  isSubmenuKey
 } from './telegramStudio';
 import { copyTemplates } from './telegramCopyBank';
 import { PageHint } from './telegramUi';
@@ -84,7 +87,7 @@ function MenuEditor({ buttons, onChange, actions, pages, selectedIndex, onSelect
   return (
     <div className="space-y-3">
       <p className="text-xs text-slate-500">
-        这些按钮出现在欢迎消息下面。欢迎文案去「系统场景 → 开场」改。
+        第一层出现在欢迎消息下面。点一项，在下方改它点进去是直达功能还是子菜单。
       </p>
       {rows.map(({ row, items }) => (
         <div key={row} className="rounded-lg border border-slate-200 p-2 space-y-2">
@@ -95,7 +98,7 @@ function MenuEditor({ buttons, onChange, actions, pages, selectedIndex, onSelect
             return (
               <div
                 key={btn._index}
-                className={`rounded-md p-2 space-y-1.5 ${active ? 'bg-cyan-50' : 'bg-slate-50'}`}
+                className={`rounded-md p-2 space-y-1.5 cursor-pointer ${active ? 'bg-cyan-50 ring-1 ring-cyan-200' : 'bg-slate-50'}`}
                 onClick={() => onSelectIndex(btn._index)}
               >
                 <div className="flex gap-1 items-center">
@@ -104,23 +107,23 @@ function MenuEditor({ buttons, onChange, actions, pages, selectedIndex, onSelect
                     onChange={(e) => patch(btn._index, { ...btn, text: e.target.value })}
                     placeholder="按钮文字"
                     className="w-32 shrink-0 bg-white border border-slate-200 rounded px-2 py-1.5 text-xs"
+                    onClick={(e) => e.stopPropagation()}
                   />
-                  <TelegramBindField
-                    kind={bind.kind}
-                    value={bind.value}
-                    onChange={(kind, value) => patch(btn._index, toMenuButton({ ...btn, text: btn.text }, { kind, value }))}
-                    actions={actions}
-                    pages={pages}
-                  />
+                  <span className="flex-1 min-w-0 text-[11px] text-slate-500 truncate">
+                    {bindCaption(bind, { actions, pages })}
+                  </span>
                   <button
                     type="button"
                     className="text-xs text-red-400 shrink-0"
-                    onClick={() => onChange(buttons.filter((_, i) => i !== btn._index))}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onChange(buttons.filter((_, i) => i !== btn._index));
+                    }}
                   >
                     ×
                   </button>
                 </div>
-                <div className="flex gap-3 text-[11px] text-slate-500">
+                <div className="flex gap-3 text-[11px] text-slate-500" onClick={(e) => e.stopPropagation()}>
                   <label className="inline-flex items-center gap-1">
                     <input
                       type="checkbox"
@@ -177,7 +180,7 @@ export default function TelegramStudioTab() {
 
   const byKey = useMemo(() => Object.fromEntries(contents.map((item) => [item.key, item])), [contents]);
   const known = useMemo(() => new Set(CORE_SCENES.map((s) => s.key)), []);
-  const pages = contents.filter((item) => !known.has(item.key));
+  const pages = contents.filter((item) => !known.has(item.key) && !isSubmenuKey(item.key));
   const systemActions = actions.length
     ? actions
     : Object.entries(ACTION_SLASH).map(([value, meta]) => ({ value, label: meta.description }));
@@ -246,6 +249,59 @@ export default function TelegramStudioTab() {
     return sync.ok;
   };
 
+  const writeSubmenu = (draft) => {
+    if (!draft?.key) return;
+    setContentDraft(draft);
+    setContents((prev) => {
+      const payload = {
+        key: draft.key,
+        name: draft.name,
+        category: draft.category || 'custom',
+        content: draft.mediaUrl
+          ? { type: 'photo', text: draft.text || '', caption: draft.text || '', mediaUrl: draft.mediaUrl, parseMode: 'HTML' }
+          : { type: 'text', text: draft.text || '', parseMode: 'HTML' },
+        buttons: draft.buttons || [],
+        enabled: true
+      };
+      const index = prev.findIndex((item) => item.key === draft.key);
+      if (index < 0) return prev.concat([payload]);
+      const next = prev.slice();
+      next[index] = { ...prev[index], ...payload };
+      return next;
+    });
+  };
+
+  const pickMenuItem = (index, buttons = menuDraft, map = byKey) => {
+    setMenuIndex(index);
+    setSelected({ kind: 'menu', index });
+    const btn = buttons[index];
+    if (!btn) return;
+    const bind = detectBind(btn.type, btn.action);
+    if (bind.kind === 'submenu' && bind.value) {
+      writeSubmenu(map[bind.value] ? fromContent(bind.value, map) : seedSubmenuDraft(btn, bind));
+    }
+  };
+
+  const handleMenuBind = (kind, value) => {
+    const btn = menuDraft[menuIndex];
+    if (!btn) return;
+    const prev = detectBind(btn.type, btn.action);
+    if (kind === 'submenu') {
+      const reuse = isSubmenuKey(value) ? fromContent(value, byKey) : null;
+      const draft = reuse?.key && (reuse.text || reuse.buttons?.length)
+        ? reuse
+        : seedSubmenuDraft(btn, prev);
+      writeSubmenu(draft);
+      setMenuDraft(menuDraft.map((item, i) => (
+        i === menuIndex ? toMenuButton(item, { kind: 'submenu', value: draft.key }) : item
+      )));
+      return;
+    }
+    setMenuDraft(menuDraft.map((item, i) => (
+      i === menuIndex ? toMenuButton(item, { kind, value }) : item
+    )));
+  };
+
   const openScene = (key, map = byKey) => {
     setBoard('scenes');
     setSceneKey(key);
@@ -265,23 +321,14 @@ export default function TelegramStudioTab() {
   const onPhoneSelect = (next) => {
     setSelected(next);
     if (next.kind === 'menu') {
-      const btn = menuDraft[next.index];
-      setMenuIndex(next.index);
-      const bind = detectBind(btn?.type, btn?.action);
-      if (bind.kind === 'system' && ACTION_SCENE[bind.value]) {
-        openScene(ACTION_SCENE[bind.value].key);
-        return;
-      }
-      if (bind.kind === 'page' && bind.value) {
-        if (known.has(bind.value)) openScene(bind.value);
-        else openPage(bind.value);
-        return;
-      }
-      setBoard('menu');
+      pickMenuItem(next.index);
       return;
     }
+    if (board === 'menu') {
+      if (next.kind === 'start' || next.kind === 'welcome') return;
+      if (isSubmenuKey(next.parentKey) || isSubmenuKey(next.key)) return;
+    }
     if (next.kind === 'start' || next.kind === 'welcome') {
-      if (board === 'menu') return;
       openScene(welcomeKey);
       return;
     }
@@ -294,9 +341,21 @@ export default function TelegramStudioTab() {
   const saveMenu = async () => {
     setSaving(true);
     try {
+      const seen = new Set();
+      for (const btn of menuDraft) {
+        const bind = detectBind(btn.type, btn.action);
+        if (bind.kind !== 'submenu' || !bind.value || seen.has(bind.value)) continue;
+        seen.add(bind.value);
+        const draft = contentDraft.key === bind.value ? contentDraft : fromContent(bind.value, byKey);
+        if (draft?.key) await upsertContent(draft);
+      }
       const synced = await persistMenu(menuDraft);
-      setNotice(synced ? '主菜单已保存。用户发 /start 后消息下面会刷新。' : '主菜单已保存，斜杠同步失败（Bot 可能未启动）');
-      await load();
+      const map = await load();
+      const bind = detectBind(menuDraft[menuIndex]?.type, menuDraft[menuIndex]?.action);
+      if (bind.kind === 'submenu' && bind.value) {
+        setContentDraft(fromContent(bind.value, map));
+      }
+      setNotice(synced ? '主菜单和子菜单已保存。用户发 /start 后生效。' : '主菜单已保存，斜杠同步失败（Bot 可能未启动）');
     } catch (err) {
       alert(err.message);
     } finally {
@@ -383,12 +442,22 @@ export default function TelegramStudioTab() {
         setContentDraft({ key: '', name: '', text: '', buttons: [], mediaUrl: '', category: 'custom' });
       }
     }
-    if (id === 'menu') setSelected({ kind: 'menu', index: menuIndex });
+    if (id === 'menu') pickMenuItem(menuIndex);
   };
 
-  const viewKey = board === 'menu' ? welcomeKey : contentDraft.key || welcomeKey;
-  const liveText = board === 'menu' ? contentText(byKey[welcomeKey]) : contentDraft.text;
-  const liveButtons = board === 'menu' ? byKey[welcomeKey]?.buttons || [] : contentDraft.buttons;
+  const selectedMenuBtn = menuDraft[menuIndex];
+  const selectedMenuBind = selectedMenuBtn ? detectBind(selectedMenuBtn.type, selectedMenuBtn.action) : { kind: '', value: '' };
+  const submenuKey = selectedMenuBind.kind === 'submenu' ? selectedMenuBind.value : '';
+  const submenuDraft = submenuKey
+    ? (contentDraft.key === submenuKey ? contentDraft : fromContent(submenuKey, byKey))
+    : null;
+  const viewKey = board === 'menu' ? (submenuKey || welcomeKey) : contentDraft.key || welcomeKey;
+  const liveText = board === 'menu'
+    ? (submenuDraft ? submenuDraft.text : contentText(byKey[welcomeKey]))
+    : contentDraft.text;
+  const liveButtons = board === 'menu'
+    ? (submenuDraft ? submenuDraft.buttons : menuDraft)
+    : contentDraft.buttons;
   const sceneTemplates = templates.filter((item) => {
     const group = sceneMeta(contentDraft.key)?.group;
     if (!group) return true;
@@ -402,7 +471,7 @@ export default function TelegramStudioTab() {
   return (
     <div>
       <PageHint title="工作室">
-        功能按钮出现在消息下面。系统场景只能改文案和按钮，不能改步骤顺序。
+        主菜单点进去可以直达功能，也可以先出一层自定义子菜单。系统场景只能改文案和按钮，不能改步骤顺序。
       </PageHint>
       {notice ? <p className="text-xs text-emerald-600 mb-3">{notice}</p> : null}
 
@@ -481,8 +550,8 @@ export default function TelegramStudioTab() {
             <>
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div>
-                  <p className="text-sm font-bold text-slate-800">主菜单按钮</p>
-                  <p className="text-xs text-slate-500">出现在欢迎消息下面。每个按钮绑定：系统功能 / 自定义页面 / 打开链接</p>
+                  <p className="text-sm font-bold text-slate-800">主菜单</p>
+                  <p className="text-xs text-slate-500">第一层按钮。点一项后，下面改它点进去是直达、链接，还是子菜单。</p>
                 </div>
                 <div className="flex gap-2 shrink-0">
                   <button
@@ -509,8 +578,54 @@ export default function TelegramStudioTab() {
                 actions={systemActions}
                 pages={pages}
                 selectedIndex={menuIndex}
-                onSelectIndex={setMenuIndex}
+                onSelectIndex={pickMenuItem}
               />
+              {selectedMenuBtn ? (
+                <div className="mt-4 pt-4 border-t border-slate-200 space-y-3">
+                  <p className="text-sm font-bold text-slate-800">
+                    「{selectedMenuBtn.text || '未命名'}」点进去
+                  </p>
+                  <TelegramBindField
+                    kind={selectedMenuBind.kind}
+                    value={selectedMenuBind.value}
+                    onChange={handleMenuBind}
+                    actions={systemActions}
+                    pages={pages}
+                    allowSubmenu
+                  />
+                  {selectedMenuBind.kind === 'system' ? (
+                    <p className="text-xs text-slate-500">
+                      一点就进系统流程。若要先出第二层按钮，把类型改成「子菜单」。系统流程里的步骤文案去「系统场景」改。
+                    </p>
+                  ) : null}
+                  {selectedMenuBind.kind === 'url' ? (
+                    <p className="text-xs text-slate-500">用户点这一项会打开链接。</p>
+                  ) : null}
+                  {selectedMenuBind.kind === 'page' ? (
+                    <p className="text-xs text-slate-500">用户点这一项会打开已有页面。要在这一项下面自己排按钮，改用「子菜单」。</p>
+                  ) : null}
+                  {selectedMenuBind.kind === 'submenu' && submenuDraft ? (
+                    <TelegramSceneEditor
+                      textareaId="tg-submenu-text"
+                      name={submenuDraft.name}
+                      nameLabel="子菜单标题（后台用）"
+                      onName={(name) => writeSubmenu({ ...submenuDraft, name })}
+                      keyLabel={submenuDraft.key}
+                      text={submenuDraft.text}
+                      onText={(text) => writeSubmenu({ ...submenuDraft, text })}
+                      mediaUrl={submenuDraft.mediaUrl}
+                      onMediaUrl={(mediaUrl) => writeSubmenu({ ...submenuDraft, mediaUrl })}
+                      variables={varsForScene(submenuDraft.key)}
+                      buttons={submenuDraft.buttons}
+                      onButtons={(buttons) => writeSubmenu({ ...submenuDraft, buttons })}
+                      actions={systemActions}
+                      pages={pages}
+                      showSave={false}
+                      hint="第二层文案和按钮。子按钮可绑系统功能、自定义页或链接。"
+                    />
+                  ) : null}
+                </div>
+              ) : null}
             </>
           ) : contentDraft.key ? (
             <TelegramSceneEditor

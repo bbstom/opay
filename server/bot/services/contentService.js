@@ -4,6 +4,17 @@ const { withRewardInlineRow } = require('../keyboards/main');
 
 const MENU_CONTENT_KEYS = new Set(['welcome_new_user', 'welcome_returning_user', 'main_menu']);
 
+function withBackToMain(markup) {
+  const rows = Array.isArray(markup?.inline_keyboard)
+    ? markup.inline_keyboard.map((row) => row.slice())
+    : [];
+  const hasBack = rows.some((row) => row.some((btn) => btn.callback_data === 'back_to_main'));
+  if (!hasBack) {
+    rows.push([{ text: '« 返回主菜单', callback_data: 'back_to_main' }]);
+  }
+  return { inline_keyboard: rows };
+}
+
 class ContentService {
   constructor() {
     this.cache = new Map();
@@ -185,6 +196,10 @@ class ContentService {
       } else if (defaultMarkup) {
         options.reply_markup = defaultMarkup;
         console.log(`🔍 [contentService] 使用默认键盘`);
+      }
+
+      if (String(key || '').startsWith('sub_')) {
+        options.reply_markup = withBackToMain(options.reply_markup);
       }
 
       if (isMenuKey) {
