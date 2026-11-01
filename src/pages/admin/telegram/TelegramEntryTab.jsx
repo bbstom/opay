@@ -120,7 +120,7 @@ export default function TelegramEntryTab() {
     <div>
       <div className="flex items-start justify-between gap-3 mb-4">
         <PageHint title="入口">
-          用户打开 Bot 后点这些按钮。勾选「斜杠菜单」的，会同时出现在输入 / 时。没有能量和闪兑就点「推荐布局」。签到、邀请、提现目前只在网页。
+          用户打开 Bot 后点这些按钮。勾选「斜杠菜单」的，会同时出现在输入 / 时。没有签到/邀请/提现就点「推荐布局」。
         </PageHint>
         <div className="flex gap-2 shrink-0">
           <button type="button" onClick={reset} className="px-3 py-1.5 text-sm border border-slate-300 rounded-lg hover:bg-slate-50">推荐布局</button>

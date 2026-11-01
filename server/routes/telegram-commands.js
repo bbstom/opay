@@ -226,7 +226,10 @@ const ACTION_SLASH = {
   orders_list: { command: 'orders', description: '我的订单', functionName: 'my_orders' },
   tickets_list: { command: 'tickets', description: '我的工单', functionName: 'tickets' },
   account_info: { command: 'account', description: '个人中心', functionName: 'account' },
-  help_center: { command: 'help', description: '帮助信息', functionName: 'help' }
+  help_center: { command: 'help', description: '帮助信息', functionName: 'help' },
+  reward_checkin: { command: 'checkin', description: '每日签到', functionName: 'checkin' },
+  reward_invite: { command: 'invite', description: '邀请好友', functionName: 'invite' },
+  reward_withdraw: { command: 'withdraw', description: 'USDT提现', functionName: 'withdraw' }
 };
 
 router.post('/sync-menu', auth, adminAuth, async (req, res) => {

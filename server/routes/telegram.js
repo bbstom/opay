@@ -7,23 +7,12 @@ const TelegramMenu = require('../models/TelegramMenu');
 const TelegramContent = require('../models/TelegramContent');
 const User = require('../models/User');
 const { getBotInstance } = require('../bot/MultiBotManager');
+const { withRewardMenuButtons, DEFAULT_MENU_BUTTONS } = require('../bot/keyboards/main');
 
 const router = express.Router();
 router.use(auth, adminAuth);
 
-const defaultMenuButtons = () => [
-  { text: '💰 USDT 代付', type: 'system', action: 'payment_usdt', row: 0, col: 0, order: 0, enabled: true, showInSlash: true },
-  { text: '💎 TRX 代付', type: 'system', action: 'payment_trx', row: 0, col: 1, order: 1, enabled: true, showInSlash: true },
-  { text: '⚡ 能量租赁', type: 'system', action: 'energy_rental', row: 1, col: 0, order: 2, enabled: true, showInSlash: true },
-  { text: '🔄 闪兑', type: 'system', action: 'swap_service', row: 1, col: 1, order: 3, enabled: true, showInSlash: true },
-  { text: '📋 我的订单', type: 'system', action: 'orders_list', row: 2, col: 0, order: 4, enabled: true, showInSlash: true },
-  { text: '💬 工单', type: 'system', action: 'tickets_list', row: 2, col: 1, order: 5, enabled: true, showInSlash: true },
-  { text: '👤 个人中心', type: 'system', action: 'account_info', row: 3, col: 0, order: 6, enabled: true, showInSlash: true },
-  { text: '❓ 帮助', type: 'system', action: 'help_center', row: 3, col: 1, order: 7, enabled: true, showInSlash: true },
-  { text: '📅 签到', type: 'system', action: 'reward_checkin', row: 4, col: 0, order: 8, enabled: true, showInSlash: true },
-  { text: '🎁 邀请', type: 'system', action: 'reward_invite', row: 4, col: 1, order: 9, enabled: true, showInSlash: true },
-  { text: '💸 提现', type: 'system', action: 'reward_withdraw', row: 4, col: 2, order: 10, enabled: true, showInSlash: true }
-];
+const defaultMenuButtons = () => DEFAULT_MENU_BUTTONS.map((btn) => ({ ...btn }));
 
 // ==================== 模板管理 ====================
 
@@ -481,6 +470,13 @@ router.get('/menu', async (req, res) => {
         buttons: defaultMenuButtons(),
         layout: 'custom'
       });
+    } else {
+      const next = withRewardMenuButtons(menu.buttons || []);
+      if (next.length !== (menu.buttons || []).length) {
+        menu.buttons = next;
+        menu.updatedAt = new Date();
+        await menu.save();
+      }
     }
 
     res.json(menu);

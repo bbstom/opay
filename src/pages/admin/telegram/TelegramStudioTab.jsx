@@ -4,6 +4,7 @@ import {
   ACTION_SCENE,
   ACTION_SLASH,
   CORE_SCENES,
+  RECOMMENDED_MENU,
   varsForScene,
   contentText,
   makeContentPayload,
@@ -169,6 +170,20 @@ export default function TelegramStudioTab() {
     return sync.ok;
   };
 
+  const applyRecommendedMenu = async () => {
+    if (!window.confirm('用推荐底部菜单覆盖当前按钮（含签到 / 邀请 / 提现）？')) return;
+    setSaving(true);
+    try {
+      const synced = await persistMenu(RECOMMENDED_MENU);
+      setNotice(synced ? '已套用推荐菜单。用户在 Bot 里发 /start 或 /menu 后，聊天框上方会出现这一排。' : '已套用推荐菜单，斜杠同步失败（Bot 可能未启动）');
+      await load();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const save = async () => {
     if (!draft) return;
     setSaving(true);
@@ -321,7 +336,7 @@ export default function TelegramStudioTab() {
   return (
     <div>
       <PageHint title="可视化配置">
-        右边手机是真聊天预览：点底部菜单会发出用户消息，机器人再回；中间改的字马上出现在气泡里。
+        右边手机底部那一排 = 用户聊天框上方的常驻菜单。点底部按钮再点「编辑」改文字或功能，保存后用户发 /start 或 /menu 才会刷新。没有签到/邀请/提现时点「套用推荐菜单」。
       </PageHint>
       {notice ? <p className="text-xs text-emerald-600 mb-3">{notice}</p> : null}
 
@@ -333,11 +348,21 @@ export default function TelegramStudioTab() {
               <p className="text-sm font-bold text-slate-800">{title}</p>
               <p className="text-xs text-slate-500">{subtitle}</p>
             </div>
-            {mode === 'review' ? (
-              <button type="button" onClick={beginEdit} className="px-3 py-1.5 text-sm bg-cyan-500 text-white rounded-lg font-bold">
-                编辑
+            <div className="flex gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={applyRecommendedMenu}
+                disabled={saving}
+                className="px-3 py-1.5 text-sm border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50"
+              >
+                套用推荐菜单
               </button>
-            ) : null}
+              {mode === 'review' ? (
+                <button type="button" onClick={beginEdit} className="px-3 py-1.5 text-sm bg-cyan-500 text-white rounded-lg font-bold">
+                  编辑
+                </button>
+              ) : null}
+            </div>
           </div>
 
           {mode !== 'edit' || !draft ? (

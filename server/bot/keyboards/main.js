@@ -43,48 +43,88 @@ function withRewardInlineRow(replyMarkup) {
   };
 }
 
-// 主菜单键盘（从数据库读取配置）
-async function getMainKeyboard() {
+const DEFAULT_MENU_BUTTONS = [
+  { text: '💰 USDT 代付', type: 'system', action: 'payment_usdt', row: 0, col: 0, order: 0, enabled: true, showInSlash: true },
+  { text: '💎 TRX 代付', type: 'system', action: 'payment_trx', row: 0, col: 1, order: 1, enabled: true, showInSlash: true },
+  { text: '⚡ 能量租赁', type: 'system', action: 'energy_rental', row: 1, col: 0, order: 2, enabled: true, showInSlash: true },
+  { text: '🔄 闪兑', type: 'system', action: 'swap_service', row: 1, col: 1, order: 3, enabled: true, showInSlash: true },
+  { text: '📋 我的订单', type: 'system', action: 'orders_list', row: 2, col: 0, order: 4, enabled: true, showInSlash: true },
+  { text: '💬 工单', type: 'system', action: 'tickets_list', row: 2, col: 1, order: 5, enabled: true, showInSlash: true },
+  { text: '👤 个人中心', type: 'system', action: 'account_info', row: 3, col: 0, order: 6, enabled: true, showInSlash: true },
+  { text: '❓ 帮助', type: 'system', action: 'help_center', row: 3, col: 1, order: 7, enabled: true, showInSlash: true },
+  { text: '📅 签到', type: 'system', action: 'reward_checkin', row: 4, col: 0, order: 8, enabled: true, showInSlash: true },
+  { text: '🎁 邀请', type: 'system', action: 'reward_invite', row: 4, col: 1, order: 9, enabled: true, showInSlash: true },
+  { text: '💸 提现', type: 'system', action: 'reward_withdraw', row: 4, col: 2, order: 10, enabled: true, showInSlash: true }
+];
+
+function groupEnabledButtons(sourceButtons = []) {
+  const rows = {};
+  sourceButtons
+    .filter((btn) => btn && btn.enabled !== false)
+    .sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0))
+    .forEach((btn) => {
+      const row = Number(btn.row) || 0;
+      if (!rows[row]) rows[row] = [];
+      rows[row].push(btn);
+    });
+  return Object.keys(rows)
+    .sort((a, b) => parseInt(a, 10) - parseInt(b, 10))
+    .map((row) => rows[row].sort((a, b) => (Number(a.col) || 0) - (Number(b.col) || 0)));
+}
+
+async function loadMenuButtons() {
   try {
     const menu = await TelegramMenu.findOne({ name: 'main_menu', enabled: true });
-    
-    if (!menu || !menu.buttons || menu.buttons.length === 0) {
-      // 使用默认菜单
-      return getDefaultMainKeyboard();
+    if (menu?.buttons?.length) {
+      return withRewardMenuButtons(menu.buttons);
     }
+  } catch (error) {
+    console.error('获取主菜单失败:', error);
+  }
+  return DEFAULT_MENU_BUTTONS;
+}
 
-    const sourceButtons = withRewardMenuButtons(menu.buttons);
+function toReplyKeyboard(sourceButtons) {
+  const rows = groupEnabledButtons(sourceButtons);
+  const keyboard = rows.map((row) => row.map((btn) => Markup.button.text(btn.text)));
+  const extra = Markup.keyboard(keyboard.length ? keyboard : [['📅 签到', '🎁 邀请', '💸 提现']]).resize();
+  return typeof extra.persistent === 'function' ? extra.persistent() : extra;
+}
 
-    // 按行分组按钮
-    const rows = {};
-    sourceButtons
-      .filter(btn => btn.enabled)
-      .sort((a, b) => a.order - b.order)
-      .forEach(btn => {
-        if (!rows[btn.row]) rows[btn.row] = [];
-        rows[btn.row].push(btn);
-      });
-
-    // 构建按钮数组
-    const buttons = Object.keys(rows)
-      .sort((a, b) => parseInt(a) - parseInt(b))
-      .map(row => {
-        return rows[row]
-          .sort((a, b) => a.col - b.col)
-          .map(btn => {
-            if (btn.type === 'url') {
-              return Markup.button.url(btn.text, btn.action);
-            } else {
-              return Markup.button.callback(btn.text, btn.action);
-            }
-          });
-      });
-
+// 主菜单：消息下方的 inline（旧消息 / 返回按钮仍可用）
+async function getMainKeyboard() {
+  try {
+    const sourceButtons = await loadMenuButtons();
+    const buttons = groupEnabledButtons(sourceButtons).map((row) =>
+      row.map((btn) => {
+        if (btn.type === 'url') {
+          return Markup.button.url(btn.text, btn.action);
+        }
+        return Markup.button.callback(btn.text, btn.action);
+      })
+    );
     return Markup.inlineKeyboard(buttons);
   } catch (error) {
     console.error('获取主菜单失败:', error);
     return getDefaultMainKeyboard();
   }
+}
+
+// 聊天框上方常驻底部菜单（和工作室手机预览同一层）
+async function getMainReplyKeyboard() {
+  try {
+    return toReplyKeyboard(await loadMenuButtons());
+  } catch (error) {
+    console.error('获取底部菜单失败:', error);
+    return toReplyKeyboard(DEFAULT_MENU_BUTTONS);
+  }
+}
+
+async function findMenuButtonByText(text) {
+  const needle = String(text || '').trim();
+  if (!needle) return null;
+  const buttons = await loadMenuButtons();
+  return buttons.find((btn) => btn.enabled !== false && String(btn.text || '').trim() === needle) || null;
 }
 
 // 默认主菜单（备用）
@@ -178,11 +218,15 @@ function getStatusEmoji(status) {
 
 module.exports = {
   getMainKeyboard,
+  getMainReplyKeyboard,
+  findMenuButtonByText,
   getPaymentMethodKeyboard,
   getConfirmKeyboard,
   getBackKeyboard,
   getOrdersKeyboard,
   getOrderDetailKeyboard,
   getStatusEmoji,
-  withRewardInlineRow
+  withRewardInlineRow,
+  withRewardMenuButtons,
+  DEFAULT_MENU_BUTTONS
 };

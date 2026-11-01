@@ -1,6 +1,6 @@
 const User = require('../../models/User');
 const Settings = require('../../models/Settings');
-const { getMainKeyboard, getBackKeyboard } = require('../keyboards/main');
+const { getMainKeyboard, getMainReplyKeyboard, getBackKeyboard } = require('../keyboards/main');
 const contentService = require('../services/contentService');
 const rewardService = require('../../services/rewardService');
 
@@ -54,7 +54,7 @@ async function start(ctx) {
       }
       
       // 尝试使用自定义内容
-      const mainKeyboard = await getMainKeyboard();
+      const mainKeyboard = await getMainReplyKeyboard();
       const sent = await contentService.sendContent(ctx, 'welcome_returning_user', {
         firstName,
         email: user.email,
@@ -74,7 +74,7 @@ async function start(ctx) {
           `💡 请选择您需要的服务 👇`,
           { 
             parse_mode: 'HTML',
-            ...(await getMainKeyboard())
+            ...(await getMainReplyKeyboard())
           }
         );
       }
@@ -108,7 +108,7 @@ async function start(ctx) {
       }
 
       // 尝试使用自定义内容
-      const mainKeyboard = await getMainKeyboard();
+      const mainKeyboard = await getMainReplyKeyboard();
       const sent = await contentService.sendContent(ctx, 'welcome_new_user', {
         siteName,
         username,
@@ -133,7 +133,7 @@ async function start(ctx) {
           `👇 请选择您需要的服务`,
           { 
             parse_mode: 'HTML',
-            ...(await getMainKeyboard())
+            ...(await getMainReplyKeyboard())
           }
         );
       }
@@ -333,7 +333,7 @@ async function menu(ctx) {
   }
 
   // 尝试使用自定义内容
-  const mainKeyboard = await getMainKeyboard();
+  const mainKeyboard = await getMainReplyKeyboard();
   const sent = await contentService.sendContent(ctx, 'main_menu', {}, mainKeyboard);
 
   // 如果没有自定义内容，使用默认消息
@@ -343,7 +343,7 @@ async function menu(ctx) {
       `👇 请选择您需要的服务`,
       { 
         parse_mode: 'HTML',
-        ...(await getMainKeyboard())
+        ...(await getMainReplyKeyboard())
       }
     );
   }
@@ -413,7 +413,7 @@ async function cancel(ctx) {
   await ctx.reply(
     '❌ 操作已取消\n\n' +
     '请选择其他功能：',
-    getMainKeyboard()
+    await getMainReplyKeyboard()
   );
 }
 
@@ -636,7 +636,7 @@ async function handleBack(ctx) {
   if (action === 'back_to_main' || action === 'back_main') {
     console.log('🔄 处理返回主菜单');
     
-    const mainKeyboard = await getMainKeyboard();
+    const mainKeyboard = await getMainReplyKeyboard();
     console.log('⌨️  主菜单键盘已获取');
     
     // 尝试使用自定义内容
@@ -654,23 +654,8 @@ async function handleBack(ctx) {
         parse_mode: 'HTML',
         ...mainKeyboard
       };
-
-      try {
-        // 尝试编辑消息（如果是文本消息）
-        await ctx.editMessageText(mainMenuText, options);
-        console.log('✅ 主菜单消息已编辑');
-      } catch (error) {
-        console.log('⚠️  编辑消息失败，尝试发送新消息:', error.message);
-        // 如果编辑失败（比如是图片消息或消息内容相同），发送新消息
-        if (error.message.includes('message to edit') || 
-            error.message.includes('message is not modified')) {
-          await ctx.reply(mainMenuText, options);
-          console.log('✅ 主菜单新消息已发送');
-        } else {
-          console.error('❌ 返回主菜单失败:', error);
-          throw error;
-        }
-      }
+      await ctx.reply(mainMenuText, options);
+      console.log('✅ 主菜单新消息已发送');
     } else {
       console.log('✅ 使用自定义内容成功');
     }
@@ -681,58 +666,88 @@ async function handleBack(ctx) {
   console.log('✅ 回调已应答');
 }
 
-// 处理从群组跳转的操作参数
-async function handleStartPayload(ctx, payload) {
-  console.log(`🔗 处理群组跳转参数: ${payload}`);
-  
-  // 导入处理器
+async function runMenuAction(ctx, action) {
   const paymentHandler = require('./payment');
   const ordersHandler = require('./orders');
   const ticketsHandler = require('./tickets');
   const energyHandler = require('./energy');
   const swapHandler = require('./swap');
   const rewardsHandler = require('./rewards');
-  
+
+  switch (action) {
+    case 'payment_usdt':
+      await paymentHandler.handleUSDTPayment(ctx);
+      return true;
+    case 'payment_trx':
+      await paymentHandler.handleTRXPayment(ctx);
+      return true;
+    case 'orders_list':
+    case 'my_orders':
+      await ordersHandler.showOrdersList(ctx);
+      return true;
+    case 'tickets_list': {
+      const prev = ctx.callbackQuery;
+      ctx.callbackQuery = { data: 'tickets_list', from: ctx.from, message: ctx.message };
+      try {
+        await ticketsHandler.handleCallback(ctx);
+      } finally {
+        ctx.callbackQuery = prev;
+      }
+      return true;
+    }
+    case 'create_ticket':
+      await ticketsHandler.startCreateTicket(ctx);
+      return true;
+    case 'energy_rental':
+      await energyHandler.start(ctx);
+      return true;
+    case 'swap_service':
+      await swapHandler.start(ctx);
+      return true;
+    case 'checkin':
+    case 'reward_checkin':
+      await rewardsHandler.showCheckin(ctx);
+      return true;
+    case 'invite':
+    case 'reward_invite':
+      await rewardsHandler.showInvite(ctx);
+      return true;
+    case 'withdraw':
+    case 'reward_withdraw':
+      await rewardsHandler.showWithdraw(ctx);
+      return true;
+    case 'account_info':
+      await accountInfo(ctx);
+      return true;
+    case 'help':
+    case 'help_center':
+      await help(ctx);
+      return true;
+    case 'menu':
+    case 'back_to_main':
+    case 'back_main':
+      await menu(ctx);
+      return true;
+    default:
+      return false;
+  }
+}
+
+// 处理从群组跳转的操作参数
+async function handleStartPayload(ctx, payload) {
+  console.log(`🔗 处理群组跳转参数: ${payload}`);
+
   try {
-    // 根据参数执行相应操作
-    switch (payload) {
-      case 'payment_usdt':
-        return await paymentHandler.handleUSDTPayment(ctx);
-      case 'payment_trx':
-        return await paymentHandler.handleTRXPayment(ctx);
-      case 'my_orders':
-        return await ordersHandler.showOrdersList(ctx);
-      case 'create_ticket':
-        return await ticketsHandler.startCreateTicket(ctx);
-      case 'energy_rental':
-        return await energyHandler.start(ctx);
-      case 'swap_service':
-        return await swapHandler.start(ctx);
-      case 'checkin':
-      case 'reward_checkin':
-        return await rewardsHandler.showCheckin(ctx);
-      case 'invite':
-      case 'reward_invite':
-        return await rewardsHandler.showInvite(ctx);
-      case 'withdraw':
-      case 'reward_withdraw':
-        return await rewardsHandler.showWithdraw(ctx);
-      case 'account_info':
-        return await accountInfo(ctx);
-      case 'help':
-        return await help(ctx);
-      case 'menu':
-        return await menu(ctx);
-      default:
-        // 未知操作，显示主菜单
-        console.log(`⚠️  未知操作参数: ${payload}`);
-        return await menu(ctx);
+    const handled = await runMenuAction(ctx, payload);
+    if (!handled) {
+      console.log(`⚠️  未知操作参数: ${payload}`);
+      return await menu(ctx);
     }
   } catch (error) {
     console.error('处理群组跳转参数失败:', error);
     await ctx.reply(
       '❌ 操作失败，请重试',
-      await getMainKeyboard()
+      await getMainReplyKeyboard()
     );
   }
 }
@@ -747,5 +762,7 @@ module.exports = {
   accountInfo,
   changeEmail,
   handleNewEmail,
-  getMainKeyboard
+  getMainKeyboard,
+  getMainReplyKeyboard,
+  runMenuAction
 };

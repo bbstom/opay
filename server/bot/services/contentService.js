@@ -192,12 +192,16 @@ class ContentService {
         options.reply_markup = withRewardInlineRow(options.reply_markup);
       }
 
+      // 底部常驻键盘不能 editMessage，只能发新消息
+      const tryEdit = !Array.isArray(options.reply_markup?.keyboard)
+        && !!(ctx.callbackQuery && ctx.update?.callback_query);
+
       // 根据类型发送
       if (rendered.type === 'photo' && rendered.mediaUrl) {
         console.log(`📷 [contentService] 发送图片消息: ${key}`);
         
         // 如果是回调查询（按钮点击），先删除旧消息
-        if (ctx.callbackQuery && ctx.update?.callback_query) {
+        if (tryEdit) {
           try {
             await ctx.deleteMessage();
             console.log(`🗑️  [contentService] 已删除旧消息`);
@@ -214,7 +218,7 @@ class ContentService {
         console.log(`🎥 [contentService] 发送视频消息: ${key}`);
         
         // 如果是回调查询（按钮点击），先删除旧消息
-        if (ctx.callbackQuery && ctx.update?.callback_query) {
+        if (tryEdit) {
           try {
             await ctx.deleteMessage();
             console.log(`🗑️  [contentService] 已删除旧消息`);
@@ -231,7 +235,7 @@ class ContentService {
         console.log(`📄 [contentService] 发送文档消息: ${key}`);
         
         // 如果是回调查询（按钮点击），先删除旧消息
-        if (ctx.callbackQuery && ctx.update?.callback_query) {
+        if (tryEdit) {
           try {
             await ctx.deleteMessage();
             console.log(`🗑️  [contentService] 已删除旧消息`);
@@ -262,7 +266,7 @@ class ContentService {
       } else if (rendered.type === 'photo' && !rendered.mediaUrl) {
         // 图片类型但没有媒体URL，当作文本处理
         console.log(`⚠️  [contentService] 图片类型但无媒体URL，当作文本处理: ${key}`);
-        if (ctx.callbackQuery && ctx.update?.callback_query) {
+        if (tryEdit) {
           try {
             console.log(`📝 [contentService] 尝试编辑消息: ${key}`);
             await ctx.editMessageText(rendered.text, options);
@@ -284,7 +288,7 @@ class ContentService {
       } else {
         // 文本消息：尝试编辑，失败则发送新消息
         console.log(`📝 [contentService] 文本消息处理: ${key}`);
-        if (ctx.callbackQuery && ctx.update?.callback_query) {
+        if (tryEdit) {
           try {
             console.log(`📝 [contentService] 尝试编辑消息: ${key}`);
             await ctx.editMessageText(rendered.text, options);

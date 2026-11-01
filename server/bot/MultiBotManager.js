@@ -281,6 +281,25 @@ class MultiBotManager {
       return ctx.reply('请先使用 /start 命令');
     }
 
+    const text = ctx.message?.text;
+    if (ctx.chat?.type === 'private' && text && !text.startsWith('/')) {
+      const { findMenuButtonByText } = require('./keyboards/main');
+      const menuBtn = await findMenuButtonByText(text);
+      if (menuBtn) {
+        if (ctx.session) {
+          delete ctx.session.state;
+          delete ctx.session.paymentData;
+          delete ctx.session.withdrawData;
+        }
+        if (menuBtn.type === 'url') {
+          const url = String(menuBtn.action || '');
+          return ctx.reply((url.startsWith('http://') || url.startsWith('https://')) ? url : `https://${url}`);
+        }
+        const handled = await startHandler.runMenuAction(ctx, menuBtn.action);
+        if (handled) return;
+      }
+    }
+
     const state = ctx.session?.state;
     
     switch (state) {
@@ -312,8 +331,8 @@ class MultiBotManager {
         return energyHandler.handleBalanceAmount(ctx);
       default:
         return ctx.reply(
-          '💡 请使用菜单选择功能，或发送 /menu 查看菜单',
-          await startHandler.getMainKeyboard()
+          '💡 请使用底部菜单选择功能，或发送 /menu 查看菜单',
+          await startHandler.getMainReplyKeyboard()
         );
     }
   }
