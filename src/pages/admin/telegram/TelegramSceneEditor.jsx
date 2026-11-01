@@ -3,7 +3,7 @@ import { HtmlBar, StepTabs } from './telegramUi';
 
 const TYPE_OPTIONS = [
   { value: 'none', label: '无按钮' },
-  { value: 'bottom', label: '底部菜单' },
+  { value: 'bottom', label: '主菜单（消息下方）' },
   { value: 'inline', label: '消息下方' },
   { value: 'system', label: '系统功能' }
 ];
@@ -158,7 +158,7 @@ export default function TelegramSceneEditor({
 
           {buttonType === 'bottom' ? (
             <div className="space-y-2">
-              <p className="text-xs text-slate-500">拖不了，点「本行+」往键盘上加。点保存后手机立刻更新。</p>
+              <p className="text-xs text-slate-500">点「本行+」往主菜单加按钮。保存后挂在欢迎消息下面。</p>
               {rows.map(({ row, items }) => (
                 <div key={row} className="flex gap-1.5 items-center">
                   {items.map((btn) => (
@@ -211,7 +211,7 @@ export default function TelegramSceneEditor({
                     value={btn.data || ''}
                     onChange={(e) => patchInline(i, { data: e.target.value })}
                     className="flex-1 bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-xs"
-                    placeholder="回调 / 链接"
+                    placeholder="系统功能 / 页面key / 链接"
                   />
                   <button type="button" className="text-xs text-red-400" onClick={() => onInlineButtons?.(inlineButtons.filter((_, j) => j !== i))}>
                     ×

@@ -11,7 +11,6 @@ import {
   TelegramDevice,
   TgChatBubble,
   TgComposer,
-  TgReplyKeyboard,
   TgTyping
 } from './telegramUi';
 
@@ -52,17 +51,20 @@ export default function TelegramStudioPhone({
   const [typing, setTyping] = useState(false);
   const busy = useRef(false);
   const buttonsSig = JSON.stringify(liveButtons);
+  const menuSig = JSON.stringify(liveMenu);
 
   const previewText = (text) => fillPreviewVars(text, { siteName: botName });
   const sceneText = (key) => previewText(key === viewKey ? liveText : contentText(contentsByKey[key]));
   const sceneButtons = (key) => (key === viewKey ? liveButtons : contentsByKey[key]?.buttons || []);
+
+  const isMenuLine = (key) => key === welcomeKey || key === 'main_menu';
 
   const botLine = (key) => ({
     id: uid(),
     from: 'bot',
     key,
     text: sceneText(key),
-    buttons: sceneButtons(key)
+    buttons: isMenuLine(key) ? liveMenu.filter((btn) => btn.enabled !== false) : sceneButtons(key)
   });
 
   const resetChat = () => {
@@ -88,14 +90,23 @@ export default function TelegramStudioPhone({
   useEffect(() => {
     setLines((prev) => {
       if (!prev.length) return prev;
-      return prev.map((line) =>
-        line.from === 'bot' && line.key === viewKey
-          ? { ...line, text: previewText(liveText), buttons: liveButtons }
-          : line
-      );
+      return prev.map((line) => {
+        if (line.from !== 'bot') return line;
+        if (isMenuLine(line.key)) {
+          return {
+            ...line,
+            text: line.key === viewKey ? previewText(liveText) : line.text,
+            buttons: liveMenu.filter((btn) => btn.enabled !== false)
+          };
+        }
+        if (line.key === viewKey) {
+          return { ...line, text: previewText(liveText), buttons: liveButtons };
+        }
+        return line;
+      });
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewKey, liveText, buttonsSig]);
+  }, [viewKey, liveText, buttonsSig, menuSig]);
 
   useEffect(() => {
     const el = scroller.current;
@@ -113,15 +124,14 @@ export default function TelegramStudioPhone({
     busy.current = false;
   };
 
-  const onMenu = async (btn) => {
-    if (busy.current || btn.enabled === false) return;
-    const key = ACTION_SCENE[btn.action]?.key || btn.action;
-    setLines((prev) => [...prev, { id: uid(), from: 'user', text: btn.text || '…' }]);
-    await pushBot(key, { kind: 'menu', index: btn._index });
-  };
-
   const onInline = async (line, btn) => {
     if (busy.current) return;
+    if (isMenuLine(line.key)) {
+      const key = ACTION_SCENE[btn.action]?.key || btn.action;
+      setLines((prev) => [...prev, { id: uid(), from: 'user', text: btn.text || '…' }]);
+      await pushBot(key, { kind: 'menu', index: btn._index });
+      return;
+    }
     const next = nextFromInline(btn, contentsByKey, welcomeKey);
     onSelect?.({ kind: 'inline', index: btn._index, parentKey: line.key });
     if (next.url || !next.key || next.key === line.key) return;
@@ -143,7 +153,6 @@ export default function TelegramStudioPhone({
 
   const menuIndex = selected?.kind === 'menu' ? selected.index : -1;
   const inlineIndex = selected?.kind === 'inline' ? selected.index : -1;
-  const rows = buttonsByRow(liveMenu);
 
   return (
     <TelegramDevice
@@ -179,12 +188,7 @@ export default function TelegramStudioPhone({
           </button>
         </div>
       }
-      footer={
-        <>
-          <TgReplyKeyboard rows={rows} activeIndex={menuIndex} onPress={onMenu} />
-          <TgComposer />
-        </>
-      }
+      footer={<TgComposer />}
     >
       <p className="text-center text-[10px] text-slate-600/80 my-2">
           <span className="bg-black/10 rounded-full px-2 py-0.5">今天</span>
@@ -212,7 +216,7 @@ export default function TelegramStudioPhone({
                           type="button"
                           onClick={() => onInline(line, btn)}
                           className={`flex-1 text-[11px] py-1.5 rounded-md bg-white/90 text-[#2a6ea6] shadow-sm ${
-                            line.key === viewKey && inlineIndex === btn._index ? 'ring-2 ring-cyan-400' : ''
+                            (isMenuLine(line.key) ? menuIndex : (line.key === viewKey ? inlineIndex : -1)) === btn._index ? 'ring-2 ring-cyan-400' : ''
                           }`}
                         >
                           {btn.text || '空'}

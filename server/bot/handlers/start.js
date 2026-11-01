@@ -1,8 +1,20 @@
 const User = require('../../models/User');
 const Settings = require('../../models/Settings');
-const { getMainKeyboard, getMainReplyKeyboard, getBackKeyboard } = require('../keyboards/main');
+const { Markup } = require('telegraf');
+const { getMainKeyboard, getBackKeyboard } = require('../keyboards/main');
 const contentService = require('../services/contentService');
 const rewardService = require('../../services/rewardService');
+
+async function clearReplyKeyboard(ctx) {
+  if (ctx.session?.replyKbCleared) return;
+  try {
+    const msg = await ctx.reply(String.fromCharCode(0x2060), Markup.removeKeyboard());
+    if (ctx.session) ctx.session.replyKbCleared = true;
+    await ctx.telegram.deleteMessage(ctx.chat.id, msg.message_id).catch(() => {});
+  } catch (error) {
+    if (ctx.session) ctx.session.replyKbCleared = true;
+  }
+}
 
 // /start 命令处理
 async function start(ctx) {
@@ -23,6 +35,8 @@ async function start(ctx) {
     if (!ctx.session) {
       ctx.session = {};
     }
+
+    await clearReplyKeyboard(ctx);
 
     // 获取系统设置
     const settings = await Settings.findOne();
@@ -54,7 +68,7 @@ async function start(ctx) {
       }
       
       // 尝试使用自定义内容
-      const mainKeyboard = await getMainReplyKeyboard();
+      const mainKeyboard = await getMainKeyboard();
       const sent = await contentService.sendContent(ctx, 'welcome_returning_user', {
         firstName,
         email: user.email,
@@ -74,7 +88,7 @@ async function start(ctx) {
           `💡 请选择您需要的服务 👇`,
           { 
             parse_mode: 'HTML',
-            ...(await getMainReplyKeyboard())
+            ...(await getMainKeyboard())
           }
         );
       }
@@ -108,7 +122,7 @@ async function start(ctx) {
       }
 
       // 尝试使用自定义内容
-      const mainKeyboard = await getMainReplyKeyboard();
+      const mainKeyboard = await getMainKeyboard();
       const sent = await contentService.sendContent(ctx, 'welcome_new_user', {
         siteName,
         username,
@@ -133,7 +147,7 @@ async function start(ctx) {
           `👇 请选择您需要的服务`,
           { 
             parse_mode: 'HTML',
-            ...(await getMainReplyKeyboard())
+            ...(await getMainKeyboard())
           }
         );
       }
@@ -332,8 +346,10 @@ async function menu(ctx) {
     return ctx.reply('请先使用 /start 命令');
   }
 
+  await clearReplyKeyboard(ctx);
+
   // 尝试使用自定义内容
-  const mainKeyboard = await getMainReplyKeyboard();
+  const mainKeyboard = await getMainKeyboard();
   const sent = await contentService.sendContent(ctx, 'main_menu', {}, mainKeyboard);
 
   // 如果没有自定义内容，使用默认消息
@@ -343,7 +359,7 @@ async function menu(ctx) {
       `👇 请选择您需要的服务`,
       { 
         parse_mode: 'HTML',
-        ...(await getMainReplyKeyboard())
+        ...(await getMainKeyboard())
       }
     );
   }
@@ -410,10 +426,12 @@ async function cancel(ctx) {
     delete ctx.session.withdrawData;
   }
 
+  await clearReplyKeyboard(ctx);
+
   await ctx.reply(
     '❌ 操作已取消\n\n' +
     '请选择其他功能：',
-    await getMainReplyKeyboard()
+    await getMainKeyboard()
   );
 }
 
@@ -636,7 +654,7 @@ async function handleBack(ctx) {
   if (action === 'back_to_main' || action === 'back_main') {
     console.log('🔄 处理返回主菜单');
     
-    const mainKeyboard = await getMainReplyKeyboard();
+    const mainKeyboard = await getMainKeyboard();
     console.log('⌨️  主菜单键盘已获取');
     
     // 尝试使用自定义内容
@@ -664,6 +682,24 @@ async function handleBack(ctx) {
   console.log('📞 准备应答回调查询');
   await ctx.answerCbQuery();
   console.log('✅ 回调已应答');
+}
+
+function unwrapAction(action) {
+  const raw = String(action || '').trim();
+  if (raw.startsWith('scene:')) return { kind: 'scene', value: raw.slice(6) };
+  if (raw.startsWith('action:')) return { kind: 'action', value: raw.slice(7) };
+  return { kind: 'auto', value: raw };
+}
+
+async function dispatchAction(ctx, action) {
+  const parsed = unwrapAction(action);
+  if (!parsed.value) return false;
+  if (parsed.kind === 'scene') {
+    const sent = await contentService.sendContent(ctx, parsed.value, {}, getBackKeyboard());
+    if (sent && ctx.callbackQuery) await ctx.answerCbQuery().catch(() => {});
+    return !!sent;
+  }
+  return runMenuAction(ctx, parsed.value);
 }
 
 async function runMenuAction(ctx, action) {
@@ -728,8 +764,14 @@ async function runMenuAction(ctx, action) {
     case 'back_main':
       await menu(ctx);
       return true;
-    default:
+    default: {
+      const sent = await contentService.sendContent(ctx, action, {}, getBackKeyboard());
+      if (sent) {
+        if (ctx.callbackQuery) await ctx.answerCbQuery().catch(() => {});
+        return true;
+      }
       return false;
+    }
   }
 }
 
@@ -738,7 +780,7 @@ async function handleStartPayload(ctx, payload) {
   console.log(`🔗 处理群组跳转参数: ${payload}`);
 
   try {
-    const handled = await runMenuAction(ctx, payload);
+    const handled = await dispatchAction(ctx, payload);
     if (!handled) {
       console.log(`⚠️  未知操作参数: ${payload}`);
       return await menu(ctx);
@@ -747,7 +789,7 @@ async function handleStartPayload(ctx, payload) {
     console.error('处理群组跳转参数失败:', error);
     await ctx.reply(
       '❌ 操作失败，请重试',
-      await getMainReplyKeyboard()
+      await getMainKeyboard()
     );
   }
 }
@@ -762,7 +804,7 @@ module.exports = {
   accountInfo,
   changeEmail,
   handleNewEmail,
-  getMainKeyboard,
-  getMainReplyKeyboard,
-  runMenuAction
+  runMenuAction,
+  dispatchAction,
+  clearReplyKeyboard
 };

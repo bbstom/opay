@@ -176,7 +176,7 @@ class ContentService {
 
       const defaultMarkup = defaultKeyboard?.reply_markup || null;
       const isMenuKey = MENU_CONTENT_KEYS.has(key);
-      // 欢迎/主菜单的底部键盘以 TelegramMenu 为准，避免文案里的旧按钮把签到/邀请/提现盖掉
+      // 欢迎/主菜单挂 TelegramMenu 的 inline，页面自己的按钮留给内页
       if (isMenuKey && defaultMarkup) {
         options.reply_markup = defaultMarkup;
         console.log(`🔍 [contentService] 使用主菜单键盘: ${key}`);
@@ -192,9 +192,7 @@ class ContentService {
         options.reply_markup = withRewardInlineRow(options.reply_markup);
       }
 
-      // 底部常驻键盘不能 editMessage，只能发新消息
-      const tryEdit = !Array.isArray(options.reply_markup?.keyboard)
-        && !!(ctx.callbackQuery && ctx.update?.callback_query);
+      const tryEdit = !!(ctx.callbackQuery && ctx.update?.callback_query);
 
       // 根据类型发送
       if (rendered.type === 'photo' && rendered.mediaUrl) {
@@ -355,6 +353,27 @@ class ContentService {
     } else {
       this.cache.clear();
     }
+  }
+
+  async sendText(ctx, key, variables, replyMarkup, fallbackText) {
+    const extra = replyMarkup
+      ? (replyMarkup.reply_markup ? replyMarkup : { reply_markup: replyMarkup })
+      : null;
+    const sent = await this.sendContent(ctx, key, variables, extra);
+    if (sent) return true;
+    if (fallbackText) {
+      await ctx.reply(fallbackText, { parse_mode: 'HTML', ...(extra || {}) });
+    }
+    return false;
+  }
+
+  async renderCaption(ctx, key, variables, fallbackText) {
+    const rendered = await this.renderKey(ctx, key, variables);
+    return {
+      text: rendered?.text || fallbackText || '',
+      parseMode: rendered?.parseMode || 'HTML',
+      reply_markup: rendered?.buttons?.reply_markup || null
+    };
   }
 
   // 处理复制按钮

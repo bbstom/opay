@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
-import { ALL_VARS, DEFAULT_VARS } from './telegramStudio';
+import { ALL_VARS, CORE_SCENES, DEFAULT_VARS } from './telegramStudio';
 import { COPY_GROUPS, copyTemplates } from './telegramCopyBank';
 
 const TABS = [
   { id: 'template', label: '模板' },
+  { id: 'scene', label: '系统场景' },
   { id: 'action', label: '系统功能' },
-  { id: 'component', label: '组件' },
+  { id: 'component', label: '自定义页' },
   { id: 'variable', label: '变量' }
 ];
 
@@ -77,6 +78,20 @@ export default function TelegramStudioLibrary({
             ))
           : null}
 
+        {tab === 'scene'
+          ? CORE_SCENES.map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => onPick('scene', item)}
+                className="block w-full text-left px-2 py-1.5 rounded hover:bg-slate-50"
+              >
+                <p className="text-xs text-slate-800">{item.title}</p>
+                <p className="text-[10px] text-slate-400">{item.group} · {item.when}</p>
+              </button>
+            ))
+          : null}
+
         {tab === 'action'
           ? actions.map((item) => (
               <button
@@ -105,7 +120,7 @@ export default function TelegramStudioLibrary({
               </button>
             ))
           ) : (
-            <p className="text-xs text-slate-400 px-2 py-6 text-center">还没有组件，去「自定义组件」新建</p>
+            <p className="text-xs text-slate-400 px-2 py-6 text-center">还没有自定义页，去「自定义组件」新建</p>
           )
         ) : null}
 

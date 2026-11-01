@@ -259,6 +259,9 @@ class MultiBotManager {
           return startHandler.handleLoginConfirm(ctx);
         }
         
+        const dispatched = await startHandler.dispatchAction(ctx, data);
+        if (dispatched) return;
+
         console.log(`❌ [@${bot.botUsername}] 未知操作: ${data}`);
         await ctx.answerCbQuery('未知操作').catch(() => {});
       } catch (error) {
@@ -279,25 +282,6 @@ class MultiBotManager {
     const user = ctx.session?.user;
     if (!user) {
       return ctx.reply('请先使用 /start 命令');
-    }
-
-    const text = ctx.message?.text;
-    if (ctx.chat?.type === 'private' && text && !text.startsWith('/')) {
-      const { findMenuButtonByText } = require('./keyboards/main');
-      const menuBtn = await findMenuButtonByText(text);
-      if (menuBtn) {
-        if (ctx.session) {
-          delete ctx.session.state;
-          delete ctx.session.paymentData;
-          delete ctx.session.withdrawData;
-        }
-        if (menuBtn.type === 'url') {
-          const url = String(menuBtn.action || '');
-          return ctx.reply((url.startsWith('http://') || url.startsWith('https://')) ? url : `https://${url}`);
-        }
-        const handled = await startHandler.runMenuAction(ctx, menuBtn.action);
-        if (handled) return;
-      }
     }
 
     const state = ctx.session?.state;
@@ -329,11 +313,13 @@ class MultiBotManager {
         return energyHandler.handleBalanceAddress(ctx);
       case 'waiting_energy_balance_amount':
         return energyHandler.handleBalanceAmount(ctx);
-      default:
+      default: {
+        const { getMainKeyboard } = require('./keyboards/main');
         return ctx.reply(
-          '💡 请使用底部菜单选择功能，或发送 /menu 查看菜单',
-          await startHandler.getMainReplyKeyboard()
+          '💡 请点消息下面的按钮，或发送 /menu 打开菜单',
+          await getMainKeyboard()
         );
+      }
     }
   }
 

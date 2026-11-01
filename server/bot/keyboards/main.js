@@ -97,7 +97,7 @@ async function getMainKeyboard() {
     const sourceButtons = await loadMenuButtons();
     const buttons = groupEnabledButtons(sourceButtons).map((row) =>
       row.map((btn) => {
-        if (btn.type === 'url') {
+        if (btn.type === 'url' || /^https?:\/\//i.test(String(btn.action || ''))) {
           return Markup.button.url(btn.text, btn.action);
         }
         return Markup.button.callback(btn.text, btn.action);
@@ -110,7 +110,7 @@ async function getMainKeyboard() {
   }
 }
 
-// 聊天框上方常驻底部菜单（和工作室手机预览同一层）
+// 聊天框上方常驻底部菜单（已停用：主菜单改为消息下方 inline）
 async function getMainReplyKeyboard() {
   try {
     return toReplyKeyboard(await loadMenuButtons());

@@ -106,8 +106,8 @@ export default function TelegramComponentsTab() {
   return (
     <div>
       <div className="flex items-start justify-between gap-3 mb-4">
-        <PageHint title="自定义组件">
-          可复用的积木。保存后会出现在「可视化配置」右侧组件库：写文案时点一下插入内容，关联按钮时点一下变成消息按钮。
+        <PageHint title="自定义页面">
+          可新建一页，挂到主菜单或写进消息按钮的回调（填这个页面的 key）。用户点了，Bot 会发出这一页。系统功能仍用原来的回调名，例如 payment_usdt。
         </PageHint>
         <button type="button" onClick={openNew} className="shrink-0 px-3 py-1.5 text-sm bg-cyan-500 text-white rounded-lg font-bold">
           新建组件

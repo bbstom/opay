@@ -81,14 +81,14 @@ export default function TelegramStudioTab() {
   const title = (() => {
     if (selected.kind === 'start') return '/start';
     if (selected.kind === 'welcome') return welcomeId === 'new' ? '新用户欢迎' : '老用户欢迎';
-    if (selected.kind === 'menu') return buttons[selected.index]?.text || '底部按钮';
+    if (selected.kind === 'menu') return buttons[selected.index]?.text || '主菜单按钮';
     if (selected.kind === 'inline') return inlineButtons[selected.index]?.text || '消息按钮';
     return sceneMeta(selected.key)?.title || byKey[selected.key]?.name || selected.key;
   })();
 
   const subtitle = (() => {
-    if (selected.kind === 'start' || selected.kind === 'welcome') return '用户第一次打开或再次进来';
-    if (selected.kind === 'menu') return '底部菜单点下去之后的回复';
+    if (selected.kind === 'start' || selected.kind === 'welcome') return '用户打开 Bot 时，主菜单挂在这条消息下面';
+    if (selected.kind === 'menu') return '点主菜单之后的回复';
     if (selected.kind === 'inline') return '这条消息下面的按钮';
     return sceneMeta(selected.key)?.when || selected.key;
   })();
@@ -101,7 +101,7 @@ export default function TelegramStudioTab() {
         text: contentText(item),
         inlineButtons: item?.buttons || [],
         menuButtons: buttons,
-        buttonType: (item?.buttons || []).length ? 'inline' : 'bottom',
+        buttonType: 'bottom',
         systemAction: '',
         contentKey: welcomeKey,
         category: 'welcome'
@@ -171,11 +171,11 @@ export default function TelegramStudioTab() {
   };
 
   const applyRecommendedMenu = async () => {
-    if (!window.confirm('用推荐底部菜单覆盖当前按钮（含签到 / 邀请 / 提现）？')) return;
+    if (!window.confirm('用推荐主菜单覆盖当前按钮（含签到 / 邀请 / 提现）？')) return;
     setSaving(true);
     try {
       const synced = await persistMenu(RECOMMENDED_MENU);
-      setNotice(synced ? '已套用推荐菜单。用户在 Bot 里发 /start 或 /menu 后，聊天框上方会出现这一排。' : '已套用推荐菜单，斜杠同步失败（Bot 可能未启动）');
+      setNotice(synced ? '已套用推荐菜单。用户在 Bot 里发 /start 或 /menu 后，会出现在欢迎消息下面。' : '已套用推荐菜单，斜杠同步失败（Bot 可能未启动）');
       await load();
     } catch (err) {
       alert(err.message);
@@ -190,9 +190,8 @@ export default function TelegramStudioTab() {
     try {
       let synced = true;
       if (selected.kind === 'start' || selected.kind === 'welcome') {
-        const keep = draft.buttonType === 'inline' ? draft.inlineButtons : byKey[draft.contentKey]?.buttons || [];
-        await upsertContent(draft.contentKey, draft.name, 'welcome', draft.text, keep);
-        if (draft.buttonType === 'bottom') synced = await persistMenu(draft.menuButtons);
+        await upsertContent(draft.contentKey, draft.name, 'welcome', draft.text, byKey[draft.contentKey]?.buttons || []);
+        synced = await persistMenu(draft.menuButtons);
       } else if (selected.kind === 'menu') {
         const action = draft.buttonType === 'system' ? draft.systemAction : buttons[selected.index]?.action;
         const key = ACTION_SCENE[action]?.key || draft.contentKey;
@@ -278,6 +277,22 @@ export default function TelegramStudioTab() {
         setDraft({ ...draft, systemAction: item.value, contentKey: key || draft.contentKey });
         return;
       }
+      if (mode === 'edit' && draft && step === 2 && draft.buttonType === 'bottom') {
+        const next = [...(draft.menuButtons || [])];
+        const maxRow = next.reduce((m, b) => Math.max(m, Number(b.row) || 0), -1);
+        next.push({
+          text: item.label,
+          type: 'system',
+          action: item.value,
+          row: maxRow + 1,
+          col: 0,
+          order: next.length,
+          enabled: true,
+          showInSlash: true
+        });
+        setDraft({ ...draft, menuButtons: next });
+        return;
+      }
       if (mode === 'edit' && draft && step === 2) {
         setDraft({
           ...draft,
@@ -295,6 +310,22 @@ export default function TelegramStudioTab() {
     if (type === 'component') {
       if (mode === 'edit' && draft && step === 1) {
         setDraft({ ...draft, text: `${draft.text || ''}${draft.text ? '\n' : ''}${contentText(item)}` });
+        return;
+      }
+      if (mode === 'edit' && draft && step === 2 && draft.buttonType === 'bottom') {
+        const next = [...(draft.menuButtons || [])];
+        const maxRow = next.reduce((m, b) => Math.max(m, Number(b.row) || 0), -1);
+        next.push({
+          text: item.name,
+          type: 'callback',
+          action: item.key,
+          row: maxRow + 1,
+          col: 0,
+          order: next.length,
+          enabled: true,
+          showInSlash: false
+        });
+        setDraft({ ...draft, menuButtons: next });
         return;
       }
       if (mode === 'edit' && draft && step === 2) {
@@ -324,7 +355,7 @@ export default function TelegramStudioTab() {
 
   const allowTypes =
     selected.kind === 'start' || selected.kind === 'welcome'
-      ? ['none', 'bottom', 'inline']
+      ? ['bottom']
       : selected.kind === 'menu'
         ? ['system', 'inline']
         : ['none', 'inline'];
@@ -336,7 +367,7 @@ export default function TelegramStudioTab() {
   return (
     <div>
       <PageHint title="可视化配置">
-        右边手机底部那一排 = 用户聊天框上方的常驻菜单。点底部按钮再点「编辑」改文字或功能，保存后用户发 /start 或 /menu 才会刷新。没有签到/邀请/提现时点「套用推荐菜单」。
+        右边手机里，欢迎消息下面那一排就是主菜单。点按钮再点「编辑」改文字或功能。保存后用户发 /start 或 /menu 才会刷新。没有签到/邀请/提现时点「套用推荐菜单」。自定义页面可挂到主菜单，或写在消息按钮的回调里。
       </PageHint>
       {notice ? <p className="text-xs text-emerald-600 mb-3">{notice}</p> : null}
 
@@ -371,7 +402,7 @@ export default function TelegramStudioTab() {
                 {viewText || '（还没有文字）'}
               </div>
               <p className="text-xs text-slate-500 mt-3">
-                消息按钮 {inlineButtons.length} 个 · 底部菜单 {buttons.length} 个
+                消息按钮 {inlineButtons.length} 个 · 主菜单 {buttons.length} 个
               </p>
             </div>
           ) : (

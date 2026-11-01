@@ -369,6 +369,92 @@ export const COPY_EXTRAS = [
     buttons: []
   },
   {
+    key: 'energy_chain',
+    name: '能量链上转账',
+    category: 'custom',
+    group: '能量',
+    content: {
+      text:
+        `⚡ <b>链上转账租赁</b>\n\n` +
+        `━━━━━━━━━━━━━━━\n` +
+        `<code>价格：</code>{{energyPriceTrx}} TRX = {{energyPriceEnergy}} 能量\n` +
+        `<code>最小：</code>{{energyMinAmount}} TRX\n` +
+        `<code>有效期：</code>{{energyValidityHours}} 小时\n` +
+        `━━━━━━━━━━━━━━━\n\n` +
+        `📍 收款地址\n<code>{{energyAddress}}</code>\n\n` +
+        `{{energyNotice}}`
+    },
+    buttons: []
+  },
+  {
+    key: 'energy_wallet',
+    name: '能量余额',
+    category: 'custom',
+    group: '能量',
+    content: {
+      text:
+        `👛 <b>TRX 余额</b>\n\n` +
+        `<code>当前余额：</code>{{trxBalance}} TRX\n` +
+        `<code>租赁下限：</code>{{energyMinAmount}} TRX\n` +
+        `<code>充值状态：</code>{{trxDepositStatus}}`
+    },
+    buttons: []
+  },
+  {
+    key: 'energy_deposit',
+    name: '能量充值',
+    category: 'custom',
+    group: '能量',
+    content: {
+      text:
+        `➕ <b>充值 TRX</b>\n\n` +
+        `<code>最低充值：</code>{{trxDepositMin}} TRX\n\n` +
+        `📍 充值地址\n<code>{{trxDepositAddress}}</code>\n\n` +
+        `转到上方地址后，把交易哈希发给我。`
+    },
+    buttons: []
+  },
+  {
+    key: 'energy_balance_ask_address',
+    name: '能量余额租赁：地址',
+    category: 'custom',
+    group: '能量',
+    content: {
+      text:
+        `💎 <b>余额租赁</b>\n\n` +
+        `<code>余额：</code>{{trxBalance}} TRX\n` +
+        `<code>最低：</code>{{energyMinAmount}} TRX\n\n` +
+        `请发送接收能量的 TRON 地址。`
+    },
+    buttons: []
+  },
+  {
+    key: 'energy_balance_ask_amount',
+    name: '能量余额租赁：数量',
+    category: 'custom',
+    group: '能量',
+    content: {
+      text:
+        `地址已记录：<code>{{address}}</code>\n\n请输入支付的 TRX 数量（最少 {{energyMinAmount}}）。`
+    },
+    buttons: []
+  },
+  {
+    key: 'energy_balance_ok',
+    name: '能量租赁成功',
+    category: 'custom',
+    group: '能量',
+    content: {
+      text:
+        `✅ 能量租赁成功\n` +
+        `<code>订单：</code>{{orderNo}}\n` +
+        `<code>能量：</code>{{energyAmount}}\n` +
+        `<code>扣款：</code>{{trxPaid}} TRX\n` +
+        `<code>余额：</code>{{trxBalance}} TRX`
+    },
+    buttons: []
+  },
+  {
     key: 'swap_service',
     name: '闪兑开场',
     category: 'custom',

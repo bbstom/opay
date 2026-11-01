@@ -51,6 +51,13 @@ export const CORE_SCENES = [
   { key: 'order_completed', title: '订单完成', when: '整单完成', group: '订单' },
   { key: 'order_failed', title: '订单失败', when: '整单失败', group: '订单' },
   { key: 'energy_rental', title: '能量租赁', when: '点能量', group: '服务' },
+  { key: 'energy_chain', title: '能量：链上转账', when: '点链上转账租赁', group: '服务' },
+  { key: 'energy_wallet', title: '能量：我的余额', when: '点我的余额', group: '服务' },
+  { key: 'energy_deposit', title: '能量：充值 TRX', when: '点充值', group: '服务' },
+  { key: 'energy_deposit_ok', title: '能量：充值成功', when: '哈希入账', group: '服务' },
+  { key: 'energy_balance_ask_address', title: '能量：输入接收地址', when: '点余额租赁', group: '服务' },
+  { key: 'energy_balance_ask_amount', title: '能量：输入 TRX 数量', when: '填完地址', group: '服务' },
+  { key: 'energy_balance_ok', title: '能量：租赁成功', when: '余额租成功', group: '服务' },
   { key: 'swap_service', title: '闪兑', when: '点闪兑', group: '服务' },
   { key: 'tickets_list', title: '工单', when: '点工单', group: '账户' },
   { key: 'account_info', title: '个人中心', when: '点个人中心', group: '账户' },
@@ -64,7 +71,7 @@ export const CORE_SCENES = [
   { key: 'reward_withdraw_ok', title: '提现已提交', when: '确认提现', group: '奖励' }
 ];
 
-// 底部按钮点下去后，编辑的是哪段回复
+// 主菜单点下去后，编辑的是哪段回复
 export const ACTION_SCENE = {
   payment_usdt: { key: 'payment_usdt_input', title: 'USDT 代付', category: 'payment' },
   payment_trx: { key: 'payment_trx_input', title: 'TRX 代付', category: 'payment' },
@@ -135,7 +142,12 @@ export const VAR_ENERGY = [
   { key: 'energyNotice', label: '能量公告', group: '能量' },
   { key: 'energyAddress', label: '能量收款地址', group: '能量' },
   { key: 'trxBalance', label: 'TRX 余额', group: '能量' },
-  { key: 'trxDepositMin', label: '最低充值 TRX', group: '能量' }
+  { key: 'trxDepositMin', label: '最低充值 TRX', group: '能量' },
+  { key: 'trxDepositAddress', label: 'TRX 充值地址', group: '能量' },
+  { key: 'trxDepositStatus', label: '充值开关', group: '能量' },
+  { key: 'orderNo', label: '能量订单号', group: '能量' },
+  { key: 'energyAmount', label: '租赁能量数', group: '能量' },
+  { key: 'trxPaid', label: '扣款 TRX', group: '能量' }
 ];
 
 export const VAR_SWAP = [
@@ -200,6 +212,13 @@ export const SCENE_VARS = {
   order_completed: ['orderId', 'type', 'amount', 'currency', 'address', 'txHash', 'explorerUrl'],
   order_failed: ['orderId', 'reason'],
   energy_rental: ['energyPriceTrx', 'energyPriceEnergy', 'energyMinAmount', 'trxBalance', 'trxDepositMin', 'energyNotice'],
+  energy_chain: ['energyPriceTrx', 'energyPriceEnergy', 'energyMinAmount', 'energyValidityHours', 'energyNotice', 'energyAddress'],
+  energy_wallet: ['trxBalance', 'energyMinAmount', 'trxDepositStatus'],
+  energy_deposit: ['trxDepositMin', 'trxDepositAddress'],
+  energy_deposit_ok: ['amount', 'trxBalance'],
+  energy_balance_ask_address: ['trxBalance', 'energyMinAmount', 'energyPriceTrx', 'energyPriceEnergy'],
+  energy_balance_ask_amount: ['address', 'energyMinAmount'],
+  energy_balance_ok: ['orderNo', 'energyAmount', 'trxPaid', 'trxBalance'],
   swap_service: ['swapRate', 'swapLastUpdate', 'swapAddress', 'swapNotice'],
   account_info: ['username', 'email', 'telegramId', 'createdAt', 'totalOrders', 'completedOrders', 'pendingOrders'],
   reward_checkin: ['trxBalance', 'checkinTrx', 'checkinStatus'],
@@ -326,6 +345,11 @@ export const PREVIEW_SAMPLE = {
   energyAddress: 'TEnergy...demo',
   trxBalance: '36.5',
   trxDepositMin: '10',
+  trxDepositAddress: 'TDeposit...demo',
+  trxDepositStatus: '已开启',
+  orderNo: 'EN20260314001',
+  energyAmount: '65,000',
+  trxPaid: '10',
   swapRate: '6.72',
   swapLastUpdate: '03-14 12:00',
   swapAddress: 'TSwap...demo',

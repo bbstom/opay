@@ -90,6 +90,14 @@ const energyHandler = {
       if (!walletAddress) return ctx.reply('❌ 能量租赁服务暂未配置，请联系管理员');
 
       const qrBuffer = await generateEnergyQRCode(walletAddress);
+      const vars = {
+        energyPriceTrx: priceTrx,
+        energyPriceEnergy: Number(priceEnergy).toLocaleString(),
+        energyMinAmount: minAmount,
+        energyValidityHours: validityHours,
+        energyNotice: notice || '',
+        energyAddress: walletAddress
+      };
       const message = `⚡ <b>链上转账租赁</b>\n\n` +
         `━━━━━━━━━━━━━━━\n` +
         `<code>当前价格：</code>${priceTrx} TRX = ${Number(priceEnergy).toLocaleString()} 能量\n` +
@@ -103,13 +111,14 @@ const energyHandler = {
         `2️⃣ 系统自动检测到账\n` +
         `3️⃣ 自动租赁能量到转账地址\n` +
         `4️⃣ 能量有效期 ${validityHours} 小时`;
+      const caption = await contentService.renderCaption(ctx, 'energy_chain', vars, message);
 
       await ctx.replyWithPhoto(
         { source: qrBuffer },
         {
-          caption: message,
-          parse_mode: 'HTML',
-          reply_markup: backEnergyKeyboard
+          caption: caption.text,
+          parse_mode: caption.parseMode,
+          reply_markup: caption.reply_markup || backEnergyKeyboard
         }
       );
     } catch (error) {
@@ -124,14 +133,18 @@ const energyHandler = {
     await answerIfCallback(ctx);
     const balance = await freshTrxBalance(userId);
     const { cfg, minAmount } = await loadEnergySettings();
-    await ctx.reply(
+    const vars = {
+      trxBalance: balance,
+      energyMinAmount: minAmount,
+      trxDepositStatus: cfg.trxDepositEnabled ? '已开启' : '未开启'
+    };
+    const fallback =
       `👛 <b>TRX 余额</b>\n\n` +
       `<code>当前余额：</code>${balance} TRX\n` +
       `<code>租赁下限：</code>${minAmount} TRX\n` +
-      `<code>充值状态：</code>${cfg.trxDepositEnabled ? '已开启' : '未开启'}\n\n` +
-      `余额来自签到、邀请和自行充值，仅用于站内租赁能量。`,
-      { parse_mode: 'HTML', reply_markup: menuKeyboard }
-    );
+      `<code>充值状态：</code>${vars.trxDepositStatus}\n\n` +
+      `余额来自签到、邀请和自行充值，仅用于站内租赁能量。`;
+    await contentService.sendText(ctx, 'energy_wallet', vars, menuKeyboard, fallback);
   },
 
   async showDeposit(ctx) {
@@ -148,22 +161,34 @@ const energyHandler = {
     }
 
     ctx.session.state = 'waiting_trx_deposit_hash';
+    const vars = {
+      trxDepositMin: cfg.trxDepositMin,
+      trxDepositAddress: cfg.trxDepositAddress
+    };
     const message =
       `➕ <b>充值 TRX</b>\n\n` +
       `转到下方地址后，把交易哈希发给我入账。\n` +
       `<code>最低充值：</code>${cfg.trxDepositMin} TRX\n\n` +
       `📍 <b>充值地址：</b>\n<code>${cfg.trxDepositAddress}</code>\n\n` +
       `请直接发送 64 位交易哈希（TxID）。`;
+    const caption = await contentService.renderCaption(ctx, 'energy_deposit', vars, message);
 
     try {
       const qrBuffer = await generateEnergyQRCode(cfg.trxDepositAddress);
       await ctx.replyWithPhoto(
         { source: qrBuffer },
-        { caption: message, parse_mode: 'HTML', reply_markup: backEnergyKeyboard }
+        {
+          caption: caption.text,
+          parse_mode: caption.parseMode,
+          reply_markup: caption.reply_markup || backEnergyKeyboard
+        }
       );
     } catch (error) {
       console.error('充值二维码失败:', error);
-      await ctx.reply(message, { parse_mode: 'HTML', reply_markup: backEnergyKeyboard });
+      await ctx.reply(caption.text, {
+        parse_mode: caption.parseMode,
+        reply_markup: caption.reply_markup || backEnergyKeyboard
+      });
     }
   },
 
@@ -174,9 +199,12 @@ const energyHandler = {
     try {
       const result = await rewardService.creditTrxDeposit({ userId, txHash });
       ctx.session.state = null;
-      await ctx.reply(
-        `✅ 已入账 ${result.amount} TRX\n当前余额：${result.trxBalance} TRX`,
-        { reply_markup: menuKeyboard }
+      await contentService.sendText(
+        ctx,
+        'energy_deposit_ok',
+        { amount: result.amount, trxBalance: result.trxBalance },
+        menuKeyboard,
+        `✅ 已入账 ${result.amount} TRX\n当前余额：${result.trxBalance} TRX`
       );
     } catch (err) {
       await ctx.reply(`❌ ${err.message || '充值失败'}，请确认哈希后重试`);
@@ -191,14 +219,19 @@ const energyHandler = {
     const { minAmount, priceTrx, priceEnergy } = await loadEnergySettings();
     ctx.session.state = 'waiting_energy_balance_address';
     ctx.session.energyReceiveAddress = '';
-    await ctx.reply(
+    const vars = {
+      trxBalance: balance,
+      energyMinAmount: minAmount,
+      energyPriceTrx: priceTrx,
+      energyPriceEnergy: Number(priceEnergy).toLocaleString()
+    };
+    const fallback =
       `💎 <b>余额租赁</b>\n\n` +
       `<code>当前余额：</code>${balance} TRX\n` +
       `<code>最低金额：</code>${minAmount} TRX\n` +
       `<code>价格：</code>${priceTrx} TRX = ${Number(priceEnergy).toLocaleString()} 能量\n\n` +
-      `请发送接收能量的 TRON 地址：`,
-      { parse_mode: 'HTML', reply_markup: backEnergyKeyboard }
-    );
+      `请发送接收能量的 TRON 地址：`;
+    await contentService.sendText(ctx, 'energy_balance_ask_address', vars, backEnergyKeyboard, fallback);
   },
 
   async handleBalanceAddress(ctx) {
@@ -209,9 +242,12 @@ const energyHandler = {
     ctx.session.energyReceiveAddress = address;
     ctx.session.state = 'waiting_energy_balance_amount';
     const { minAmount } = await loadEnergySettings();
-    await ctx.reply(
-      `地址已记录：<code>${address}</code>\n\n请输入支付的 TRX 数量（最少 ${minAmount}）：`,
-      { parse_mode: 'HTML', reply_markup: backEnergyKeyboard }
+    await contentService.sendText(
+      ctx,
+      'energy_balance_ask_amount',
+      { address, energyMinAmount: minAmount },
+      backEnergyKeyboard,
+      `地址已记录：<code>${address}</code>\n\n请输入支付的 TRX 数量（最少 ${minAmount}）：`
     );
   },
 
@@ -225,14 +261,19 @@ const energyHandler = {
       ctx.session.state = null;
       ctx.session.energyReceiveAddress = '';
       const balance = await freshTrxBalance(userId);
-      await ctx.reply(
+      const vars = {
+        orderNo: order.orderNo,
+        energyAmount: Number(order.energyAmount).toLocaleString(),
+        trxPaid: order.trxPaid,
+        trxBalance: balance
+      };
+      const fallback =
         `✅ 能量租赁成功\n` +
         `<code>订单：</code>${order.orderNo}\n` +
-        `<code>能量：</code>${Number(order.energyAmount).toLocaleString()}\n` +
+        `<code>能量：</code>${vars.energyAmount}\n` +
         `<code>扣款：</code>${order.trxPaid} TRX\n` +
-        `<code>余额：</code>${balance} TRX`,
-        { parse_mode: 'HTML', reply_markup: menuKeyboard }
-      );
+        `<code>余额：</code>${balance} TRX`;
+      await contentService.sendText(ctx, 'energy_balance_ok', vars, menuKeyboard, fallback);
     } catch (err) {
       await ctx.reply(`❌ ${err.message || '租赁失败'}`);
     }
