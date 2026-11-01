@@ -12,7 +12,6 @@ export default function TelegramComponentsTab() {
   const [contents, setContents] = useState([]);
   const [filter, setFilter] = useState('all');
   const [editing, setEditing] = useState(null);
-  const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
@@ -39,10 +38,8 @@ export default function TelegramComponentsTab() {
       category: 'custom',
       text: '',
       buttons: [],
-      buttonType: 'none',
       isNew: true
     });
-    setStep(1);
   };
 
   const openItem = (item) => {
@@ -52,10 +49,8 @@ export default function TelegramComponentsTab() {
       category: 'custom',
       text: contentText(item),
       buttons: item.buttons || [],
-      buttonType: (item.buttons || []).length ? 'inline' : 'none',
       isNew: false
     });
-    setStep(1);
   };
 
   const save = async () => {
@@ -71,7 +66,7 @@ export default function TelegramComponentsTab() {
         editing.name.trim(),
         'custom',
         editing.text,
-        editing.buttonType === 'none' ? [] : editing.buttons
+        editing.buttons
       );
       const exists = !!contents.find((item) => item.key === editing.key)?._id;
       const res = await apiFetch(exists ? `/api/telegram/contents/${editing.key}` : '/api/telegram/contents', {
@@ -162,18 +157,13 @@ export default function TelegramComponentsTab() {
             <TelegramSceneEditor
               textareaId="tg-comp-text"
               name={editing.name}
-              nameLabel="组件名称"
+              nameLabel="页面名称"
               onName={(name) => setEditing({ ...editing, name })}
               text={editing.text}
               onText={(text) => setEditing({ ...editing, text })}
               variables={DEFAULT_VARS}
-              step={step}
-              onStep={setStep}
-              buttonType={editing.buttonType}
-              onButtonType={(buttonType) => setEditing({ ...editing, buttonType })}
-              allowTypes={['none', 'inline']}
-              inlineButtons={editing.buttons}
-              onInlineButtons={(buttons) => setEditing({ ...editing, buttons })}
+              buttons={editing.buttons}
+              onButtons={(buttons) => setEditing({ ...editing, buttons })}
               saving={saving}
               onSave={save}
               onCancel={() => setEditing(null)}

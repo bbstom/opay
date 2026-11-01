@@ -1,20 +1,32 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { apiFetch } from '../../../api/client';
 import {
   ACTION_SCENE,
   ACTION_SLASH,
   CORE_SCENES,
   RECOMMENDED_MENU,
+  SCENE_GROUPS,
   varsForScene,
   contentText,
   makeContentPayload,
   sceneMeta,
-  welcomeKeyOf
+  welcomeKeyOf,
+  buttonsByRow,
+  detectBind,
+  toMenuButton
 } from './telegramStudio';
+import { copyTemplates } from './telegramCopyBank';
 import { PageHint } from './telegramUi';
+import TelegramBindField from './TelegramBindField';
 import TelegramSceneEditor from './TelegramSceneEditor';
 import TelegramStudioPhone from './TelegramStudioPhone';
-import TelegramStudioLibrary from './TelegramStudioLibrary';
+
+const BOARDS = [
+  { id: 'menu', label: '主菜单' },
+  { id: 'scenes', label: '系统场景' },
+  { id: 'pages', label: '自定义页面' }
+];
 
 const categoryOf = (key) => {
   const meta = sceneMeta(key);
@@ -25,17 +37,152 @@ const categoryOf = (key) => {
   return ACTION_SCENE[key]?.category || 'custom';
 };
 
+const fromContent = (key, map) => {
+  const item = map[key];
+  const meta = sceneMeta(key);
+  return {
+    key,
+    name: item?.name || meta?.title || key,
+    text: contentText(item),
+    buttons: item?.buttons || [],
+    mediaUrl: item?.content?.mediaUrl || '',
+    category: item?.category || categoryOf(key)
+  };
+};
+
+const boardFromSearch = (search) => {
+  const params = new URLSearchParams(search);
+  const board = params.get('board');
+  if (board === 'menu' || board === 'scenes' || board === 'pages') return board;
+  if (params.get('tab') === 'components') return 'pages';
+  return 'menu';
+};
+
+function MenuEditor({ buttons, onChange, actions, pages, selectedIndex, onSelectIndex }) {
+  const rows = buttonsByRow(buttons);
+  const patch = (index, next) => {
+    const { _index, ...rest } = next;
+    onChange(buttons.map((btn, i) => (i === index ? rest : btn)));
+  };
+  const add = (row) => {
+    const col = buttons.filter((btn) => (Number(btn.row) || 0) === row).length;
+    onChange([
+      ...buttons,
+      {
+        text: '新按钮',
+        type: 'system',
+        action: 'payment_usdt',
+        row,
+        col,
+        order: buttons.length,
+        enabled: true,
+        showInSlash: true
+      }
+    ]);
+  };
+
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-slate-500">
+        用户打开 Bot 后，这些按钮挂在欢迎消息下面。欢迎文案去「系统场景 → 开场」改。
+      </p>
+      {rows.map(({ row, items }) => (
+        <div key={row} className="rounded-lg border border-slate-200 p-2 space-y-2">
+          <p className="text-[10px] text-slate-400">第 {row + 1} 行</p>
+          {items.map((btn) => {
+            const bind = detectBind(btn.type, btn.action);
+            const active = selectedIndex === btn._index;
+            return (
+              <div
+                key={btn._index}
+                className={`rounded-md p-2 space-y-1.5 ${active ? 'bg-cyan-50' : 'bg-slate-50'}`}
+                onClick={() => onSelectIndex(btn._index)}
+              >
+                <div className="flex gap-1 items-center">
+                  <input
+                    value={btn.text || ''}
+                    onChange={(e) => patch(btn._index, { ...btn, text: e.target.value })}
+                    placeholder="按钮文字"
+                    className="w-32 shrink-0 bg-white border border-slate-200 rounded px-2 py-1.5 text-xs"
+                  />
+                  <TelegramBindField
+                    kind={bind.kind}
+                    value={bind.value}
+                    onChange={(kind, value) => patch(btn._index, toMenuButton({ ...btn, text: btn.text }, { kind, value }))}
+                    actions={actions}
+                    pages={pages}
+                  />
+                  <button
+                    type="button"
+                    className="text-xs text-red-400 shrink-0"
+                    onClick={() => onChange(buttons.filter((_, i) => i !== btn._index))}
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="flex gap-3 text-[11px] text-slate-500">
+                  <label className="inline-flex items-center gap-1">
+                    <input
+                      type="checkbox"
+                      checked={btn.enabled !== false}
+                      onChange={(e) => patch(btn._index, { ...btn, enabled: e.target.checked })}
+                    />
+                    启用
+                  </label>
+                  {bind.kind === 'system' ? (
+                    <label className="inline-flex items-center gap-1">
+                      <input
+                        type="checkbox"
+                        checked={btn.showInSlash !== false}
+                        onChange={(e) => patch(btn._index, { ...btn, showInSlash: e.target.checked })}
+                      />
+                      同步斜杠
+                    </label>
+                  ) : null}
+                </div>
+              </div>
+            );
+          })}
+          <button type="button" className="text-[11px] text-slate-400" onClick={() => add(row)}>
+            本行 +
+          </button>
+        </div>
+      ))}
+      <button
+        type="button"
+        className="text-xs text-cyan-600"
+        onClick={() => add(rows.length ? rows[rows.length - 1].row + 1 : 0)}
+      >
+        新一行
+      </button>
+    </div>
+  );
+}
+
 export default function TelegramStudioTab() {
+  const location = useLocation();
+  const [board, setBoard] = useState(() => boardFromSearch(location.search));
   const [menu, setMenu] = useState(null);
   const [contents, setContents] = useState([]);
   const [actions, setActions] = useState([]);
   const [welcomeId, setWelcomeId] = useState('new');
   const [selected, setSelected] = useState({ kind: 'start' });
-  const [mode, setMode] = useState('review');
-  const [step, setStep] = useState(1);
-  const [draft, setDraft] = useState(null);
+  const [menuDraft, setMenuDraft] = useState([]);
+  const [menuIndex, setMenuIndex] = useState(0);
+  const [sceneKey, setSceneKey] = useState('welcome_new_user');
+  const [pageKey, setPageKey] = useState('');
+  const [contentDraft, setContentDraft] = useState({ key: 'welcome_new_user', name: '', text: '', buttons: [], mediaUrl: '', category: 'welcome' });
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState('');
+
+  const byKey = useMemo(() => Object.fromEntries(contents.map((item) => [item.key, item])), [contents]);
+  const known = useMemo(() => new Set(CORE_SCENES.map((s) => s.key)), []);
+  const pages = contents.filter((item) => !known.has(item.key));
+  const systemActions = actions.length
+    ? actions
+    : Object.entries(ACTION_SLASH).map(([value, meta]) => ({ value, label: meta.description }));
+  const templates = useMemo(() => copyTemplates(), []);
+  const welcomeKey = welcomeKeyOf(welcomeId);
 
   const load = async () => {
     const [menuRes, contentRes, actionRes] = await Promise.all([
@@ -43,105 +190,34 @@ export default function TelegramStudioTab() {
       apiFetch('/api/telegram/contents'),
       apiFetch('/api/telegram/menu/system-actions')
     ]);
-    setMenu(await menuRes.json());
+    const menuData = await menuRes.json();
     const list = await contentRes.json();
-    setContents(Array.isArray(list) ? list : []);
     const acts = await actionRes.json();
+    const nextContents = Array.isArray(list) ? list : [];
+    setMenu(menuData);
+    setContents(nextContents);
     setActions(Array.isArray(acts) ? acts : []);
+    setMenuDraft(menuData?.buttons || []);
+    return Object.fromEntries(nextContents.map((item) => [item.key, item]));
   };
 
   useEffect(() => {
-    load().catch((err) => console.error('加载可视化配置失败:', err));
+    load()
+      .then((map) => setContentDraft(fromContent('welcome_new_user', map)))
+      .catch((err) => console.error('加载工作室失败:', err));
   }, []);
 
-  const byKey = Object.fromEntries(contents.map((item) => [item.key, item]));
-  const buttons = menu?.buttons || [];
-  const welcomeKey = welcomeKeyOf(welcomeId);
-  const known = new Set(CORE_SCENES.map((s) => s.key));
-  const components = contents.filter((item) => !known.has(item.key));
-
-  const viewKey = (() => {
-    if (selected.kind === 'menu') return ACTION_SCENE[buttons[selected.index]?.action]?.key || welcomeKey;
-    if (selected.kind === 'scene') return selected.key;
-    if (selected.kind === 'inline') return selected.parentKey;
-    return welcomeKey;
-  })();
-
-  const viewItem = byKey[viewKey];
-  const viewText = contentText(viewItem);
-  const inlineButtons = viewItem?.buttons || [];
-
-  const select = (next) => {
-    setSelected(next);
-    setMode('review');
-    setStep(1);
-    setDraft(null);
-  };
-
-  const title = (() => {
-    if (selected.kind === 'start') return '/start';
-    if (selected.kind === 'welcome') return welcomeId === 'new' ? '新用户欢迎' : '老用户欢迎';
-    if (selected.kind === 'menu') return buttons[selected.index]?.text || '主菜单按钮';
-    if (selected.kind === 'inline') return inlineButtons[selected.index]?.text || '消息按钮';
-    return sceneMeta(selected.key)?.title || byKey[selected.key]?.name || selected.key;
-  })();
-
-  const subtitle = (() => {
-    if (selected.kind === 'start' || selected.kind === 'welcome') return '用户打开 Bot 时，主菜单挂在这条消息下面';
-    if (selected.kind === 'menu') return '点主菜单之后的回复';
-    if (selected.kind === 'inline') return '这条消息下面的按钮';
-    return sceneMeta(selected.key)?.when || selected.key;
-  })();
-
-  const beginEdit = () => {
-    if (selected.kind === 'start' || selected.kind === 'welcome') {
-      const item = byKey[welcomeKey];
-      setDraft({
-        name: item?.name || title,
-        text: contentText(item),
-        inlineButtons: item?.buttons || [],
-        menuButtons: buttons,
-        buttonType: 'bottom',
-        systemAction: '',
-        contentKey: welcomeKey,
-        category: 'welcome'
-      });
-    } else if (selected.kind === 'menu') {
-      const btn = buttons[selected.index];
-      const key = ACTION_SCENE[btn?.action]?.key || btn?.action;
-      const item = byKey[key];
-      setDraft({
-        name: btn?.text || '',
-        text: contentText(item),
-        inlineButtons: item?.buttons || [],
-        menuButtons: buttons,
-        buttonType: btn?.type === 'url' ? 'none' : 'system',
-        systemAction: btn?.action || '',
-        contentKey: key,
-        category: ACTION_SCENE[btn?.action]?.category || 'custom'
-      });
-    } else {
-      const key = selected.kind === 'inline' ? selected.parentKey : selected.key;
-      const item = byKey[key];
-      setDraft({
-        name: item?.name || sceneMeta(key)?.title || key,
-        text: contentText(item),
-        inlineButtons: item?.buttons || [],
-        menuButtons: buttons,
-        buttonType: (item?.buttons || []).length ? 'inline' : 'none',
-        systemAction: '',
-        contentKey: key,
-        category: item?.category || categoryOf(key)
-      });
-    }
-    setMode('edit');
-    setStep(selected.kind === 'inline' ? 2 : 1);
-  };
-
-  const upsertContent = async (key, name, category, text, nextButtons) => {
-    const payload = makeContentPayload(key, name, category, text, nextButtons);
-    const exists = !!byKey[key]?._id;
-    const res = await apiFetch(exists ? `/api/telegram/contents/${key}` : '/api/telegram/contents', {
+  const upsertContent = async (draft) => {
+    const payload = makeContentPayload(
+      draft.key,
+      draft.name,
+      draft.category,
+      draft.text,
+      (draft.buttons || []).map(({ _index, ...btn }) => btn),
+      { mediaUrl: draft.mediaUrl }
+    );
+    const exists = !!byKey[draft.key]?._id;
+    const res = await apiFetch(exists ? `/api/telegram/contents/${draft.key}` : '/api/telegram/contents', {
       method: exists ? 'PUT' : 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -156,18 +232,95 @@ export default function TelegramStudioTab() {
     const res = await apiFetch('/api/telegram/menu', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ buttons: nextButtons })
+      body: JSON.stringify({ buttons: nextButtons.map(({ _index, ...btn }) => btn) })
     });
     if (!res.ok) {
       const data = await res.json();
-      throw new Error(data.error || '保存入口失败');
+      throw new Error(data.error || '保存菜单失败');
     }
     const sync = await apiFetch('/api/telegram-commands/sync-menu', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ buttons: nextButtons })
+      body: JSON.stringify({ buttons: nextButtons.map(({ _index, ...btn }) => btn) })
     });
     return sync.ok;
+  };
+
+  const openScene = (key, map = byKey) => {
+    setBoard('scenes');
+    setSceneKey(key);
+    if (key === 'welcome_new_user') setWelcomeId('new');
+    if (key === 'welcome_returning_user') setWelcomeId('returning');
+    setContentDraft(fromContent(key, map));
+    setSelected(key.startsWith('welcome') ? { kind: 'welcome' } : { kind: 'scene', key });
+  };
+
+  const openPage = (key, map = byKey) => {
+    setBoard('pages');
+    setPageKey(key);
+    setContentDraft(fromContent(key, map));
+    setSelected({ kind: 'scene', key });
+  };
+
+  const onPhoneSelect = (next) => {
+    setSelected(next);
+    if (next.kind === 'menu') {
+      const btn = menuDraft[next.index];
+      setMenuIndex(next.index);
+      const bind = detectBind(btn?.type, btn?.action);
+      if (bind.kind === 'system' && ACTION_SCENE[bind.value]) {
+        openScene(ACTION_SCENE[bind.value].key);
+        return;
+      }
+      if (bind.kind === 'page' && bind.value) {
+        if (known.has(bind.value)) openScene(bind.value);
+        else openPage(bind.value);
+        return;
+      }
+      setBoard('menu');
+      return;
+    }
+    if (next.kind === 'start' || next.kind === 'welcome') {
+      if (board === 'menu') return;
+      openScene(welcomeKey);
+      return;
+    }
+    const key = next.kind === 'inline' ? next.parentKey : next.key;
+    if (!key) return;
+    if (known.has(key)) openScene(key);
+    else openPage(key);
+  };
+
+  const saveMenu = async () => {
+    setSaving(true);
+    try {
+      const synced = await persistMenu(menuDraft);
+      setNotice(synced ? '主菜单已保存。用户发 /start 或 /menu 后才会刷新。' : '主菜单已保存，斜杠同步失败（Bot 可能未启动）');
+      await load();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveContent = async () => {
+    if (!contentDraft?.key) return;
+    if (board === 'pages' && !String(contentDraft.name || '').trim()) {
+      alert('先写页面名称');
+      return;
+    }
+    setSaving(true);
+    try {
+      await upsertContent(contentDraft);
+      const map = await load();
+      setContentDraft(fromContent(contentDraft.key, map));
+      setNotice('已保存，右侧预览已更新');
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const applyRecommendedMenu = async () => {
@@ -175,7 +328,8 @@ export default function TelegramStudioTab() {
     setSaving(true);
     try {
       const synced = await persistMenu(RECOMMENDED_MENU);
-      setNotice(synced ? '已套用推荐菜单。用户在 Bot 里发 /start 或 /menu 后，会出现在欢迎消息下面。' : '已套用推荐菜单，斜杠同步失败（Bot 可能未启动）');
+      setMenuDraft(RECOMMENDED_MENU);
+      setNotice(synced ? '已套用推荐菜单。用户发 /start 或 /menu 后出现在欢迎消息下面。' : '已套用推荐菜单，斜杠同步失败（Bot 可能未启动）');
       await load();
     } catch (err) {
       alert(err.message);
@@ -184,285 +338,225 @@ export default function TelegramStudioTab() {
     }
   };
 
-  const save = async () => {
-    if (!draft) return;
-    setSaving(true);
-    try {
-      let synced = true;
-      if (selected.kind === 'start' || selected.kind === 'welcome') {
-        await upsertContent(draft.contentKey, draft.name, 'welcome', draft.text, byKey[draft.contentKey]?.buttons || []);
-        synced = await persistMenu(draft.menuButtons);
-      } else if (selected.kind === 'menu') {
-        const action = draft.buttonType === 'system' ? draft.systemAction : buttons[selected.index]?.action;
-        const key = ACTION_SCENE[action]?.key || draft.contentKey;
-        const keep = draft.buttonType === 'inline' ? draft.inlineButtons : byKey[key]?.buttons || [];
-        await upsertContent(key, ACTION_SCENE[action]?.title || draft.name, ACTION_SCENE[action]?.category || 'custom', draft.text, keep);
-        const nextButtons = buttons.map((btn, i) =>
-          i === selected.index
-            ? { ...btn, text: draft.name, type: draft.buttonType === 'system' ? 'system' : btn.type, action }
-            : btn
-        );
-        synced = await persistMenu(nextButtons);
-      } else {
-        const keep = draft.buttonType === 'none' ? [] : draft.inlineButtons;
-        await upsertContent(draft.contentKey, draft.name, draft.category, draft.text, keep);
-      }
-      setNotice(synced ? '已保存，手机预览已更新' : '已保存，斜杠菜单同步失败（Bot 可能未启动）');
-      await load();
-      setMode('review');
-      setStep(1);
-      setDraft(null);
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const applyCopy = (item, append = false) => {
-    const text = item.text || '';
-    const nextButtons = item.buttons || [];
-    if (mode === 'edit' && draft) {
-      setDraft({
-        ...draft,
-        text: append ? `${draft.text || ''}${draft.text ? '\n' : ''}${text}` : text,
-        inlineButtons: append || !nextButtons.length ? draft.inlineButtons : nextButtons,
-        buttonType: !append && nextButtons.length ? 'inline' : draft.buttonType
-      });
-      setNotice(append ? `已插入「${item.name}」` : `已套用「${item.name}」，保存后生效`);
-      return;
-    }
-    const jumpKey = item.snippet || item.style ? viewKey : item.key;
-    const known = CORE_SCENES.some((s) => s.key === jumpKey);
-    if (!item.snippet && known) {
-      if (jumpKey === 'welcome_new_user') {
-        setWelcomeId('new');
-        setSelected({ kind: 'welcome' });
-      } else if (jumpKey === 'welcome_returning_user') {
-        setWelcomeId('returning');
-        setSelected({ kind: 'welcome' });
-      } else {
-        setSelected({ kind: 'scene', key: jumpKey });
-      }
-    }
-    const targetKey = known ? jumpKey : viewKey;
-    const current = byKey[targetKey];
-    setDraft({
-      name: item.snippet ? current?.name || title : item.name,
-      text: append ? `${contentText(current)}${contentText(current) ? '\n' : ''}${text}` : text,
-      inlineButtons: append || !nextButtons.length ? current?.buttons || [] : nextButtons,
-      menuButtons: buttons,
-      buttonType: (!append && nextButtons.length) || (current?.buttons || []).length ? 'inline' : 'none',
-      systemAction: '',
-      contentKey: targetKey,
-      category: categoryOf(targetKey)
+  const startNewPage = () => {
+    const key = `page_${Date.now()}`;
+    setBoard('pages');
+    setPageKey(key);
+    setContentDraft({
+      key,
+      name: '新页面',
+      text: '',
+      buttons: [],
+      mediaUrl: '',
+      category: 'custom',
+      isNew: true
     });
-    setMode('edit');
-    setStep(1);
-    setNotice(append ? `已插入「${item.name}」` : `已套用「${item.name}」，改完点保存`);
+    setSelected({ kind: 'scene', key });
   };
 
-  const onPick = (type, item) => {
-    if (type === 'template' || type === 'snippet') {
-      applyCopy(item, type === 'snippet');
+  const removePage = async (key) => {
+    if (!window.confirm('删除这个自定义页面？菜单里还指着它的按钮会点不动。')) return;
+    const res = await apiFetch(`/api/telegram/contents/${key}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const data = await res.json();
+      alert(data.error || '删除失败');
       return;
     }
-    if (type === 'scene') {
-      select({ kind: 'scene', key: item.key });
-      return;
-    }
-    if (type === 'action') {
-      const key = ACTION_SCENE[item.value]?.key;
-      if (mode === 'edit' && draft && step === 2 && draft.buttonType === 'system') {
-        setDraft({ ...draft, systemAction: item.value, contentKey: key || draft.contentKey });
-        return;
-      }
-      if (mode === 'edit' && draft && step === 2 && draft.buttonType === 'bottom') {
-        const next = [...(draft.menuButtons || [])];
-        const maxRow = next.reduce((m, b) => Math.max(m, Number(b.row) || 0), -1);
-        next.push({
-          text: item.label,
-          type: 'system',
-          action: item.value,
-          row: maxRow + 1,
-          col: 0,
-          order: next.length,
-          enabled: true,
-          showInSlash: true
-        });
-        setDraft({ ...draft, menuButtons: next });
-        return;
-      }
-      if (mode === 'edit' && draft && step === 2) {
-        setDraft({
-          ...draft,
-          buttonType: 'inline',
-          inlineButtons: [
-            ...draft.inlineButtons,
-            { text: item.label, type: 'callback', data: item.value, row: 0, col: draft.inlineButtons.length }
-          ]
-        });
-        return;
-      }
-      if (key) select({ kind: 'scene', key });
-      return;
-    }
-    if (type === 'component') {
-      if (mode === 'edit' && draft && step === 1) {
-        setDraft({ ...draft, text: `${draft.text || ''}${draft.text ? '\n' : ''}${contentText(item)}` });
-        return;
-      }
-      if (mode === 'edit' && draft && step === 2 && draft.buttonType === 'bottom') {
-        const next = [...(draft.menuButtons || [])];
-        const maxRow = next.reduce((m, b) => Math.max(m, Number(b.row) || 0), -1);
-        next.push({
-          text: item.name,
-          type: 'callback',
-          action: item.key,
-          row: maxRow + 1,
-          col: 0,
-          order: next.length,
-          enabled: true,
-          showInSlash: false
-        });
-        setDraft({ ...draft, menuButtons: next });
-        return;
-      }
-      if (mode === 'edit' && draft && step === 2) {
-        setDraft({
-          ...draft,
-          buttonType: draft.buttonType === 'none' ? 'inline' : draft.buttonType,
-          inlineButtons: [...draft.inlineButtons, { text: item.name, type: 'callback', data: item.key, row: 0, col: 0 }]
-        });
-        return;
-      }
-      select({ kind: 'scene', key: item.key });
-      return;
-    }
-    if (type === 'variable' && mode === 'edit' && draft && step === 1) {
-      const token = `{{${item.key}}}`;
-      const el = document.getElementById('tg-scene-text');
-      const text = draft.text || '';
-      if (!el) {
-        setDraft({ ...draft, text: text + token });
-        return;
-      }
-      const start = el.selectionStart ?? text.length;
-      const end = el.selectionEnd ?? start;
-      setDraft({ ...draft, text: text.slice(0, start) + token + text.slice(end) });
+    const map = await load();
+    const next = Object.values(map).find((item) => !known.has(item.key) && item.key !== key);
+    if (next) openPage(next.key, map);
+    else {
+      setPageKey('');
+      setContentDraft({ key: '', name: '', text: '', buttons: [], mediaUrl: '', category: 'custom' });
     }
   };
 
-  const allowTypes =
-    selected.kind === 'start' || selected.kind === 'welcome'
-      ? ['bottom']
-      : selected.kind === 'menu'
-        ? ['system', 'inline']
-        : ['none', 'inline'];
+  const switchBoard = (id) => {
+    setBoard(id);
+    setNotice('');
+    if (id === 'scenes') openScene(sceneKey);
+    if (id === 'pages') {
+      if (pageKey && byKey[pageKey]) openPage(pageKey);
+      else if (pages[0]) openPage(pages[0].key);
+      else {
+        setPageKey('');
+        setContentDraft({ key: '', name: '', text: '', buttons: [], mediaUrl: '', category: 'custom' });
+      }
+    }
+    if (id === 'menu') setSelected({ kind: 'menu', index: menuIndex });
+  };
+
+  const viewKey = board === 'menu' ? welcomeKey : contentDraft.key || welcomeKey;
+  const liveText = board === 'menu' ? contentText(byKey[welcomeKey]) : contentDraft.text;
+  const liveButtons = board === 'menu' ? byKey[welcomeKey]?.buttons || [] : contentDraft.buttons;
+  const sceneTemplates = templates.filter((item) => {
+    const group = sceneMeta(contentDraft.key)?.group;
+    if (!group) return true;
+    return item.group === group || item.group === '积木';
+  });
 
   if (!menu) {
-    return <p className="text-sm text-slate-400 py-12 text-center">加载可视化配置...</p>;
+    return <p className="text-sm text-slate-400 py-12 text-center">加载工作室...</p>;
   }
 
   return (
     <div>
-      <PageHint title="可视化配置">
-        右边手机里，欢迎消息下面那一排就是主菜单。点按钮再点「编辑」改文字或功能。保存后用户发 /start 或 /menu 才会刷新。没有签到/邀请/提现时点「套用推荐菜单」。自定义页面可挂到主菜单，或写在消息按钮的回调里。
+      <PageHint title="工作室">
+        三块分开改：主菜单、系统场景、自定义页面。不用先点手机。主菜单挂在欢迎消息下面，不是聊天框底部常驻。系统场景只能改文案和按钮，不能改步骤顺序。
       </PageHint>
       {notice ? <p className="text-xs text-emerald-600 mb-3">{notice}</p> : null}
 
-      <div className="flex flex-col xl:flex-row gap-4 items-start">
-        <div className="flex-1 bg-white rounded-lg border border-slate-200 p-4 min-h-[420px] min-w-0">
-          <div className="flex items-start justify-between gap-3 mb-3">
-            <div>
-              <p className="text-[11px] text-slate-400">当前选中</p>
-              <p className="text-sm font-bold text-slate-800">{title}</p>
-              <p className="text-xs text-slate-500">{subtitle}</p>
-            </div>
-            <div className="flex gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={applyRecommendedMenu}
-                disabled={saving}
-                className="px-3 py-1.5 text-sm border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50"
-              >
-                套用推荐菜单
-              </button>
-              {mode === 'review' ? (
-                <button type="button" onClick={beginEdit} className="px-3 py-1.5 text-sm bg-cyan-500 text-white rounded-lg font-bold">
-                  编辑
-                </button>
-              ) : null}
-            </div>
-          </div>
+      <div className="flex gap-1 p-1 bg-slate-100 rounded-lg mb-4 w-fit">
+        {BOARDS.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => switchBoard(item.id)}
+            className={`px-3 py-1.5 text-sm rounded-md ${board === item.id ? 'bg-white text-slate-800 shadow-sm font-bold' : 'text-slate-500'}`}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
 
-          {mode !== 'edit' || !draft ? (
-            <div>
-              <div className="bg-slate-50 rounded-lg p-3 text-sm whitespace-pre-wrap min-h-[120px]">
-                {viewText || '（还没有文字）'}
+      <div className="flex flex-col xl:flex-row gap-4 items-start">
+        {board !== 'menu' ? (
+          <div className="w-full xl:w-56 shrink-0 bg-white rounded-lg border border-slate-200 p-2 max-h-[640px] overflow-y-auto">
+            {board === 'scenes'
+              ? SCENE_GROUPS.map((group) => (
+                  <div key={group} className="mb-2">
+                    <p className="text-[10px] text-slate-400 px-2 py-1">{group}</p>
+                    {CORE_SCENES.filter((item) => item.group === group).map((item) => (
+                      <button
+                        key={item.key}
+                        type="button"
+                        onClick={() => openScene(item.key)}
+                        className={`block w-full text-left px-2 py-1.5 rounded-md text-xs ${
+                          sceneKey === item.key ? 'bg-cyan-50 text-cyan-800 font-bold' : 'hover:bg-slate-50 text-slate-700'
+                        }`}
+                      >
+                        {item.title}
+                        <span className="block text-[10px] font-normal text-slate-400">{item.when}</span>
+                      </button>
+                    ))}
+                  </div>
+                ))
+              : (
+                <>
+                  <button
+                    type="button"
+                    onClick={startNewPage}
+                    className="w-full mb-2 px-2 py-1.5 text-xs bg-cyan-500 text-white rounded-md font-bold"
+                  >
+                    新建页面
+                  </button>
+                  {pages.length ? (
+                    pages.map((item) => (
+                      <div key={item.key} className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => openPage(item.key)}
+                          className={`flex-1 text-left px-2 py-1.5 rounded-md text-xs min-w-0 ${
+                            pageKey === item.key ? 'bg-cyan-50 text-cyan-800 font-bold' : 'hover:bg-slate-50 text-slate-700'
+                          }`}
+                        >
+                          <span className="block truncate">{item.name}</span>
+                          <span className="block text-[10px] font-normal text-slate-400 truncate">{item.key}</span>
+                        </button>
+                        <button type="button" className="text-[11px] text-red-400 shrink-0" onClick={() => removePage(item.key)}>
+                          ×
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-xs text-slate-400 px-2 py-6 text-center">还没有自定义页面</p>
+                  )}
+                </>
+              )}
+          </div>
+        ) : null}
+
+        <div className="flex-1 bg-white rounded-lg border border-slate-200 p-4 min-h-[420px] min-w-0">
+          {board === 'menu' ? (
+            <>
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div>
+                  <p className="text-sm font-bold text-slate-800">主菜单按钮</p>
+                  <p className="text-xs text-slate-500">每个按钮绑定：系统功能 / 自定义页面 / 打开链接</p>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={applyRecommendedMenu}
+                    disabled={saving}
+                    className="px-3 py-1.5 text-sm border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    套用推荐菜单
+                  </button>
+                  <button
+                    type="button"
+                    onClick={saveMenu}
+                    disabled={saving}
+                    className="px-3 py-1.5 text-sm bg-cyan-500 text-white rounded-lg font-bold disabled:opacity-50"
+                  >
+                    {saving ? '保存中' : '保存主菜单'}
+                  </button>
+                </div>
               </div>
-              <p className="text-xs text-slate-500 mt-3">
-                消息按钮 {inlineButtons.length} 个 · 主菜单 {buttons.length} 个
-              </p>
-            </div>
-          ) : (
+              <MenuEditor
+                buttons={menuDraft}
+                onChange={setMenuDraft}
+                actions={systemActions}
+                pages={pages}
+                selectedIndex={menuIndex}
+                onSelectIndex={setMenuIndex}
+              />
+            </>
+          ) : contentDraft.key ? (
             <TelegramSceneEditor
-              name={selected.kind === 'menu' ? draft.name : undefined}
-              onName={selected.kind === 'menu' ? (name) => setDraft({ ...draft, name }) : undefined}
-              text={draft.text}
-              onText={(text) => setDraft({ ...draft, text })}
-              variables={varsForScene(draft.contentKey || viewKey)}
-              step={step}
-              onStep={setStep}
-              buttonType={draft.buttonType}
-              onButtonType={(buttonType) => setDraft({ ...draft, buttonType })}
-              allowTypes={allowTypes}
-              inlineButtons={draft.inlineButtons}
-              onInlineButtons={(inlineButtons) => setDraft({ ...draft, inlineButtons })}
-              menuButtons={draft.menuButtons}
-              onMenuButtons={(menuButtons) => setDraft({ ...draft, menuButtons })}
-              actions={actions.length ? actions : Object.entries(ACTION_SLASH).map(([value, meta]) => ({ value, label: meta.description }))}
-              library={components}
-              systemAction={draft.systemAction}
-              onSystemAction={(systemAction) => {
-                const key = ACTION_SCENE[systemAction]?.key || draft.contentKey;
-                const item = byKey[key];
-                setDraft({
-                  ...draft,
-                  systemAction,
-                  contentKey: key,
-                  text: item ? contentText(item) : draft.text,
-                  inlineButtons: item?.buttons || [],
-                  category: ACTION_SCENE[systemAction]?.category || draft.category
-                });
-              }}
+              textareaId={board === 'pages' ? 'tg-page-text' : 'tg-scene-text'}
+              name={contentDraft.name}
+              nameLabel={board === 'pages' ? '页面名称' : '场景名称'}
+              onName={(name) => setContentDraft({ ...contentDraft, name })}
+              keyLabel={contentDraft.key}
+              text={contentDraft.text}
+              onText={(text) => setContentDraft({ ...contentDraft, text })}
+              mediaUrl={contentDraft.mediaUrl}
+              onMediaUrl={(mediaUrl) => setContentDraft({ ...contentDraft, mediaUrl })}
+              variables={varsForScene(contentDraft.key)}
+              buttons={contentDraft.buttons}
+              onButtons={(buttons) => setContentDraft({ ...contentDraft, buttons })}
+              actions={systemActions}
+              pages={pages}
+              templates={sceneTemplates}
+              onApplyTemplate={(item) =>
+                setContentDraft({
+                  ...contentDraft,
+                  text: item.text || contentDraft.text,
+                  buttons: item.buttons?.length ? item.buttons : contentDraft.buttons
+                })
+              }
               saving={saving}
-              onSave={save}
-              onCancel={() => {
-                setMode('review');
-                setDraft(null);
-                setStep(1);
-              }}
+              onSave={saveContent}
+              hint={sceneMeta(contentDraft.key)?.when ? `用户看到的时机：${sceneMeta(contentDraft.key).when}` : '可挂到主菜单，或从别的页面按钮跳过来'}
             />
+          ) : (
+            <p className="text-sm text-slate-400 py-16 text-center">左边选一项，或新建页面</p>
           )}
         </div>
 
-        <TelegramStudioLibrary
-          actions={actions.length ? actions : Object.entries(ACTION_SLASH).map(([value, meta]) => ({ value, label: meta.description }))}
-          components={components}
-          variables={varsForScene(draft?.contentKey || viewKey)}
-          onPick={onPick}
-        />
-
         <TelegramStudioPhone
           welcomeId={welcomeId}
-          onWelcomeId={setWelcomeId}
+          onWelcomeId={(id) => {
+            setWelcomeId(id);
+            if (board === 'scenes') openScene(welcomeKeyOf(id));
+          }}
           selected={selected}
-          onSelect={select}
+          onSelect={onPhoneSelect}
           viewKey={viewKey}
-          liveText={draft?.text ?? viewText}
-          liveButtons={draft?.inlineButtons ?? inlineButtons}
-          liveMenu={draft?.menuButtons ?? buttons}
+          liveText={liveText}
+          liveButtons={liveButtons}
+          liveMenu={menuDraft}
           contentsByKey={byKey}
         />
       </div>

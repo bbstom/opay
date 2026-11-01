@@ -3,12 +3,10 @@ import AdminLayout from '../components/AdminLayout';
 import TelegramBroadcastsTab from './admin/telegram/TelegramBroadcastsTab';
 import TelegramHubTab from './admin/telegram/TelegramHubTab';
 import TelegramStudioTab from './admin/telegram/TelegramStudioTab';
-import TelegramComponentsTab from './admin/telegram/TelegramComponentsTab';
 
 const tabSection = (tab) => {
   if (['hub', 'bots', 'stats'].includes(tab)) return 'hub';
-  if (['studio', 'entry', 'menu', 'commands', 'copy', 'contents', 'templates'].includes(tab)) return 'studio';
-  if (tab === 'components') return 'components';
+  if (['studio', 'entry', 'menu', 'commands', 'copy', 'contents', 'templates', 'components'].includes(tab)) return 'studio';
   if (['broadcasts', 'broadcast-stats'].includes(tab)) return 'broadcasts';
   return 'hub';
 };
@@ -23,7 +21,6 @@ const TelegramManagePage = () => {
       <div className={section === 'studio' ? 'max-w-[1600px] mx-auto' : 'max-w-7xl mx-auto'}>
         {section === 'hub' && <TelegramHubTab />}
         {section === 'studio' && <TelegramStudioTab />}
-        {section === 'components' && <TelegramComponentsTab />}
         {section === 'broadcasts' && <TelegramBroadcastsTab />}
       </div>
     </AdminLayout>

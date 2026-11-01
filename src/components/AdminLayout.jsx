@@ -27,7 +27,6 @@ import {
   Shield,
   Coins,
   Bot,
-  Puzzle,
   Smartphone
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -79,8 +78,7 @@ const AdminLayout = ({ children }) => {
       label: 'Telegram Bot',
       subItems: [
         { id: 'hub', icon: <Bot size={18} />, label: '我的机器人' },
-        { id: 'studio', icon: <Smartphone size={18} />, label: '可视化配置' },
-        { id: 'components', icon: <Puzzle size={18} />, label: '自定义组件' },
+        { id: 'studio', icon: <Smartphone size={18} />, label: '工作室' },
         { id: 'broadcasts', icon: <Share2 size={18} />, label: '群发' }
       ]
     },

@@ -71,6 +71,8 @@ export const CORE_SCENES = [
   { key: 'reward_withdraw_ok', title: '提现已提交', when: '确认提现', group: '奖励' }
 ];
 
+export const SCENE_GROUPS = [...new Set(CORE_SCENES.map((s) => s.group))];
+
 // 主菜单点下去后，编辑的是哪段回复
 export const ACTION_SCENE = {
   payment_usdt: { key: 'payment_usdt_input', title: 'USDT 代付', category: 'payment' },
@@ -84,6 +86,41 @@ export const ACTION_SCENE = {
   reward_checkin: { key: 'reward_checkin', title: '每日签到', category: 'custom' },
   reward_invite: { key: 'reward_invite', title: '邀请好友', category: 'custom' },
   reward_withdraw: { key: 'reward_withdraw', title: 'USDT 提现', category: 'custom' }
+};
+
+export const unwrapAction = (raw) => {
+  const value = String(raw || '').trim();
+  if (value.startsWith('scene:')) return value.slice(6);
+  if (value.startsWith('action:')) return value.slice(7);
+  return value;
+};
+
+// 按钮只分三种：系统功能 / 自定义页（含系统场景 key）/ 链接
+export const detectBind = (type, data) => {
+  const raw = String(data || '').trim();
+  if (type === 'url' || /^https?:\/\//i.test(raw) || raw.startsWith('t.me/') || raw.startsWith('@')) {
+    return { kind: 'url', value: raw };
+  }
+  const value = unwrapAction(raw);
+  if (type === 'system' || ACTION_SLASH[value] || ACTION_SCENE[value] || NAV_ACTIONS[value]) {
+    return { kind: 'system', value };
+  }
+  return { kind: 'page', value };
+};
+
+export const toMenuButton = (btn, bind) => {
+  if (bind.kind === 'url') return { ...btn, type: 'url', action: bind.value };
+  if (bind.kind === 'page') return { ...btn, type: 'callback', action: bind.value, showInSlash: false };
+  return { ...btn, type: 'system', action: bind.value };
+};
+
+export const toInlineButton = (btn, bind) => {
+  if (bind.kind === 'url') return { ...btn, type: 'url', data: bind.value };
+  return { ...btn, type: 'callback', data: bind.value };
+};
+
+export const NAV_ACTIONS = {
+  back_to_main: { description: '返回主菜单' }
 };
 
 export const WELCOME_VERSIONS = [
@@ -250,13 +287,15 @@ export const welcomeKeyOf = (id) =>
 
 export const contentText = (item) => item?.content?.text || item?.content?.caption || '';
 
-export const makeContentPayload = (key, name, category, text, buttons = []) => ({
+export const makeContentPayload = (key, name, category, text, buttons = [], extra = {}) => ({
   key,
   name,
   category: category || 'custom',
-  content: { type: 'text', text: text || '', parseMode: 'HTML' },
+  content: extra.mediaUrl
+    ? { type: 'photo', text: text || '', caption: text || '', mediaUrl: extra.mediaUrl, parseMode: 'HTML' }
+    : { type: 'text', text: text || '', parseMode: 'HTML' },
   buttons: buttons || [],
-  enabled: true
+  enabled: extra.enabled !== false
 });
 
 export const ENERGY_FEED_SAMPLE = [
